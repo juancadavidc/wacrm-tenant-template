@@ -45,6 +45,7 @@ const jwtSecret = hex(64);
 const anonKey = mintJwt('anon', jwtSecret);
 const serviceRoleKey = mintJwt('service_role', jwtSecret);
 const encryptionKey = hex(64);
+const realtimeEncKey = randomBytes(16).toString('hex'); // 32 chars hex = 16 bytes = AES-128 valid
 
 process.stdout.write(
   [
@@ -53,5 +54,6 @@ process.stdout.write(
     `ANON_KEY=${anonKey}`,
     `SERVICE_ROLE_KEY=${serviceRoleKey}`,
     `ENCRYPTION_KEY=${encryptionKey}`,
+    `REALTIME_ENC_KEY=${realtimeEncKey}`,
   ].join('\n') + '\n'
 );

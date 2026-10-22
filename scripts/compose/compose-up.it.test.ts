@@ -142,17 +142,18 @@ describe.skipIf(!enabled)('docker compose up on a clean machine', () => {
         }
       }
 
-      // Also confirm `docker compose port supabase-db 5432` fails
-      let threw = false;
-      try {
-        execFileSync('docker', ['compose', 'port', 'supabase-db', '5432'], {
-          ...execOpts,
-          stdio: 'ignore',
-        });
-      } catch {
-        threw = true;
-      }
-      expect(threw, 'supabase-db port 5432 should not be published').toBe(true);
+      // docker compose port exits 0 in Compose v2 even when no port is mapped;
+      // docker inspect is reliable across all versions.
+      const inspectOut = execFileSync(
+        'docker',
+        ['inspect', 'wacrm-supabase-db-1', '--format', '{{json .NetworkSettings.Ports}}'],
+        execOpts,
+      );
+      const ports = JSON.parse(inspectOut.toString().trim()) as Record<string, unknown>;
+      expect(
+        ports['5432/tcp'] ?? null,
+        'supabase-db port 5432 should not be published',
+      ).toBeNull();
     },
     60_000,
   );
