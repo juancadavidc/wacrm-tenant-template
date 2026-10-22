@@ -9,6 +9,7 @@
  *   ANON_KEY           — HS256 JWT signed with JWT_SECRET, role: anon
  *   SERVICE_ROLE_KEY   — HS256 JWT signed with JWT_SECRET, role: service_role
  *   ENCRYPTION_KEY     — 64 random hex bytes (AES-256-GCM key for token encryption)
+ *   REALTIME_ENC_KEY   — 16 hex chars (16 raw bytes → AES-128-ECB key for Realtime seeds)
  *
  * No dependencies — pure Node.js crypto.
  */
@@ -45,7 +46,7 @@ const jwtSecret = hex(64);
 const anonKey = mintJwt('anon', jwtSecret);
 const serviceRoleKey = mintJwt('service_role', jwtSecret);
 const encryptionKey = hex(64);
-const realtimeEncKey = randomBytes(16).toString('hex'); // 32 chars hex = 16 bytes = AES-128 valid
+const realtimeEncKey = randomBytes(8).toString('hex');  // 16 chars = 16 bytes raw → AES-128-ECB
 
 process.stdout.write(
   [
