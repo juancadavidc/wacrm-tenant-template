@@ -56,6 +56,35 @@ const execOpts: ExecSyncOptionsWithStringEncoding = {
   stdio: ['ignore', 'pipe', 'pipe'],
 };
 
+/**
+ * Prints `docker compose ps` and recent logs while the stack still exists.
+ * `afterAll` always runs `compose down -v`, so the workflow step that dumps
+ * logs afterwards sees nothing when `--wait` fails.
+ */
+function dumpComposeDiagnostics(): void {
+  const commands = [
+    ['compose', 'ps'],
+    ['compose', 'logs', '--tail', '200'],
+  ];
+  for (const args of commands) {
+    const label = `docker ${args.join(' ')}`;
+    try {
+      const output = execFileSync('docker', args, {
+        encoding: 'utf8',
+        cwd: REPO_ROOT,
+        stdio: ['ignore', 'pipe', 'pipe'],
+        maxBuffer: 10 * 1024 * 1024,
+      });
+      console.error(`\n--- ${label} ---\n${output}`);
+    } catch (error) {
+      const failed = error as { stdout?: string; stderr?: string };
+      console.error(
+        `\n--- ${label} (failed) ---\n${failed.stdout ?? ''}${failed.stderr ?? ''}`,
+      );
+    }
+  }
+}
+
 describe.skipIf(!enabled)('docker compose up on a clean machine', () => {
   beforeAll(() => {
     if (existsSync(ENV_PATH)) {
@@ -83,12 +112,18 @@ describe.skipIf(!enabled)('docker compose up on a clean machine', () => {
     'brings every service to healthy',
     () => {
       // `--wait` exits non-zero if any service fails to reach healthy before
-      // the timeout — that IS the assertion.
-      execFileSync(
-        'docker',
-        ['compose', 'up', '-d', '--wait', '--wait-timeout', '600'],
-        { ...execOpts, stdio: 'inherit' },
-      );
+      // the timeout — that IS the assertion. Dump ps/logs before afterAll
+      // tears the stack down.
+      try {
+        execFileSync(
+          'docker',
+          ['compose', 'up', '-d', '--wait', '--wait-timeout', '600'],
+          { ...execOpts, stdio: 'inherit' },
+        );
+      } catch (error) {
+        dumpComposeDiagnostics();
+        throw error;
+      }
 
       // Double-check via `docker compose ps` — every service must report healthy.
       const psOutput = execFileSync(
