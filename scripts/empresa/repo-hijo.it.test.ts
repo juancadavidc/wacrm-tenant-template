@@ -30,7 +30,7 @@ describe.skipIf(process.env['COMPOSE_IT'] !== '1')(
 
     beforeAll(() => {
       hijo = crearRepoHijo({ id: 'empresa-it', nombre: 'Empresa IT' });
-    });
+    }, 120_000);
 
     afterAll(() => {
       if (!hijo) return;
@@ -39,7 +39,7 @@ describe.skipIf(process.env['COMPOSE_IT'] !== '1')(
       } finally {
         hijo.limpiar();
       }
-    });
+    }, 300_000);
 
     it('usa el proyecto de Compose de la empresa', () => {
       const cfg = JSON.parse(compose('config', '--format', 'json')) as {

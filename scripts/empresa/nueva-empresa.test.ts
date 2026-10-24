@@ -1,4 +1,5 @@
 import { spawnSync } from 'node:child_process';
+import { createCipheriv, createDecipheriv, randomBytes } from 'node:crypto';
 import {
   copyFileSync,
   existsSync,
@@ -59,7 +60,16 @@ describe('nueva-empresa', () => {
     ])
       expect(existsSync(join(hijo.dir, r))).toBe(true);
     expect(hijo.env.COMPOSE_PROJECT_NAME).toBe('wacrm-baru');
-    expect(hijo.env.ENCRYPTION_KEY).toMatch(/^[0-9a-f]{64,}$/);
+    expect(hijo.env.ENCRYPTION_KEY).toMatch(/^[0-9a-f]{64}$/);
+    const llave = Buffer.from(hijo.env.ENCRYPTION_KEY, 'hex');
+    const iv = randomBytes(12);
+    const cif = createCipheriv('aes-256-gcm', llave, iv);
+    const ct = Buffer.concat([cif.update('token', 'utf8'), cif.final()]);
+    const dec = createDecipheriv('aes-256-gcm', llave, iv);
+    dec.setAuthTag(cif.getAuthTag());
+    expect(
+      Buffer.concat([dec.update(ct), dec.final()]).toString('utf8')
+    ).toBe('token');
     expect(hijo.env.NEXT_PUBLIC_SUPABASE_ANON_KEY).toBe(hijo.env.ANON_KEY);
     expect(hijo.env.SUPABASE_SERVICE_ROLE_KEY).toBe(hijo.env.SERVICE_ROLE_KEY);
     expect(cargarConfigEmpresa(hijo.dir, hijo.env).empresa).toEqual({
