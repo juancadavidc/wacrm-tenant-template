@@ -77,7 +77,10 @@ const FueraDeHorario = z.strictObject({
     .regex(HORARIO, 'debe ser HH:mm-HH:mm (24 horas), p. ej. 18:00-08:00'),
   zona: z
     .string()
-    .refine(zonaValida, 'zona horaria IANA inexistente (p. ej. America/Bogota)'),
+    .refine(
+      zonaValida,
+      'zona horaria IANA inexistente (p. ej. America/Bogota)'
+    ),
 });
 
 export const PoliciesSchema = z
@@ -145,9 +148,7 @@ export function validarPolicies(datos) {
   const r = PoliciesSchema.safeParse(datos);
   if (r.success) return r.data;
   throw new PoliciesInvalidasError(
-    r.error.issues.map(
-      (i) => `${i.path.join('.') || '(raíz)'}: ${i.message}`
-    )
+    r.error.issues.map((i) => `${i.path.join('.') || '(raíz)'}: ${i.message}`)
   );
 }
 

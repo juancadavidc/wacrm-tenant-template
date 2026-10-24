@@ -4,7 +4,11 @@ import { describe, expect, it } from 'vitest';
 
 import { validateStepsForActivation } from '@/lib/automations/validate';
 
-import { ConflictoPoliciesError, pasosDeseados, planificar } from './policies-plan.mjs';
+import {
+  ConflictoPoliciesError,
+  pasosDeseados,
+  planificar,
+} from './policies-plan.mjs';
 import { validarPolicies } from './policies-esquema.mjs';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -56,7 +60,8 @@ function aplicarEnMemoria(estado: Estado, ops: Op[]): Estado {
     switch (o.tipo) {
       case 'crear-usuario': {
         const userId = randomUUID();
-        if (o.rol === 'owner') e.cuenta = { id: randomUUID(), ownerUserId: userId };
+        if (o.rol === 'owner')
+          e.cuenta = { id: randomUUID(), ownerUserId: userId };
         e.usuarios.push({
           userId,
           correo: o.correo,
@@ -69,7 +74,11 @@ function aplicarEnMemoria(estado: Estado, ops: Op[]): Estado {
       }
       case 'mover-usuario': {
         const u = e.usuarios.find((x: Op) => x.userId === o.userId);
-        Object.assign(u, { accountId: e.cuenta.id, rol: o.rol, nombre: o.nombre });
+        Object.assign(u, {
+          accountId: e.cuenta.id,
+          rol: o.rol,
+          nombre: o.nombre,
+        });
         break;
       }
       case 'cambiar-rol':
@@ -79,7 +88,11 @@ function aplicarEnMemoria(estado: Estado, ops: Op[]): Estado {
         e.usuarios.find((x: Op) => x.userId === o.userId).nombre = o.nombre;
         break;
       case 'crear-etiqueta':
-        e.etiquetas.push({ id: randomUUID(), nombre: o.nombre, color: o.color });
+        e.etiquetas.push({
+          id: randomUUID(),
+          nombre: o.nombre,
+          color: o.color,
+        });
         break;
       case 'actualizar-etiqueta':
         e.etiquetas.find((x: Op) => x.id === o.id).color = o.color;
@@ -114,10 +127,13 @@ function aplicarEnMemoria(estado: Estado, ops: Op[]): Estado {
         e.automatizaciones.find((x: Op) => x.id === o.id).pasos = o.pasos;
         break;
       case 'actualizar-automatizacion':
-        Object.assign(e.automatizaciones.find((x: Op) => x.id === o.id), {
-          activa: o.activa,
-          triggerType: o.triggerType,
-        });
+        Object.assign(
+          e.automatizaciones.find((x: Op) => x.id === o.id),
+          {
+            activa: o.activa,
+            triggerType: o.triggerType,
+          }
+        );
         break;
       case 'actualizar-bot':
         Object.assign(e.bot, {
@@ -138,7 +154,12 @@ function aplicarEnMemoria(estado: Estado, ops: Op[]): Estado {
 /** Base con la empresa ya aplicada, más un bot configurado (ai_configs existe). */
 function estadoAplicado(): Estado {
   const base = ESTADO_VACIO();
-  base.bot = { id: randomUUID(), activo: false, respuestaAutomatica: false, tope: 3 };
+  base.bot = {
+    id: randomUUID(),
+    activo: false,
+    respuestaAutomatica: false,
+    tope: 3,
+  };
   return aplicarEnMemoria(base, planificar(base, POLICIES));
 }
 
@@ -151,7 +172,9 @@ describe('planificar', () => {
       rol: 'owner',
     });
     expect(
-      ops.filter((o: Op) => o.tipo === 'crear-etiqueta').map((o: Op) => o.nombre)
+      ops
+        .filter((o: Op) => o.tipo === 'crear-etiqueta')
+        .map((o: Op) => o.nombre)
     ).toEqual(['VIP', 'Mayorista']);
     expect(
       ops.filter((o: Op) => o.tipo === 'crear-etapa').map((o: Op) => o.posicion)
@@ -177,7 +200,10 @@ describe('planificar', () => {
     e.etiquetas.find((t: Op) => t.nombre === 'vip').color = '#000000';
     const ops = planificar(e, POLICIES);
     expect(ops).toHaveLength(1);
-    expect(ops[0]).toMatchObject({ tipo: 'actualizar-etiqueta', color: '#f59e0b' });
+    expect(ops[0]).toMatchObject({
+      tipo: 'actualizar-etiqueta',
+      color: '#f59e0b',
+    });
   });
 
   it('cambiar el texto actualiza, no duplica', () => {
@@ -198,14 +224,23 @@ describe('planificar', () => {
     const id = e.automatizaciones.find(
       (a: Op) => a.marcador === 'policies.yaml:bienvenida'
     ).id;
-    expect(ops.filter((o: Op) => o.tipo === 'crear-automatizacion')).toHaveLength(0);
-    expect(ops).toEqual([expect.objectContaining({ tipo: 'reemplazar-pasos', id })]);
+    expect(
+      ops.filter((o: Op) => o.tipo === 'crear-automatizacion')
+    ).toHaveLength(0);
+    expect(ops).toEqual([
+      expect.objectContaining({ tipo: 'reemplazar-pasos', id }),
+    ]);
   });
 
   it('no borra etiquetas, etapas ni usuarios que no están en el archivo', () => {
     const e = estadoAplicado();
     e.etiquetas.push({ id: 'x', nombre: 'Otra', color: '#111111' });
-    e.embudo.etapas.push({ id: 'y', nombre: 'Extra', color: '#111111', posicion: 9 });
+    e.embudo.etapas.push({
+      id: 'y',
+      nombre: 'Extra',
+      color: '#111111',
+      posicion: 9,
+    });
     e.usuarios.push({
       userId: 'z',
       correo: 'otro@empresa.co',
@@ -228,7 +263,11 @@ describe('planificar', () => {
   it('mueve a la cuenta un usuario existente cuya cuenta personal está vacía', () => {
     const e = estadoAplicado();
     const u = e.usuarios.find((x: Op) => x.correo === 'asesor@empresa.co');
-    Object.assign(u, { accountId: 'personal-1', rol: 'owner', cuentaPersonalVacia: true });
+    Object.assign(u, {
+      accountId: 'personal-1',
+      rol: 'owner',
+      cuentaPersonalVacia: true,
+    });
     expect(planificar(e, POLICIES)).toEqual([
       expect.objectContaining({
         tipo: 'mover-usuario',
@@ -241,7 +280,11 @@ describe('planificar', () => {
   it('lanza ConflictoPoliciesError si un usuario de la lista es miembro de otra cuenta con datos', () => {
     const e = estadoAplicado();
     const u = e.usuarios.find((x: Op) => x.correo === 'asesor@empresa.co');
-    Object.assign(u, { accountId: 'ajena', rol: 'owner', cuentaPersonalVacia: false });
+    Object.assign(u, {
+      accountId: 'ajena',
+      rol: 'owner',
+      cuentaPersonalVacia: false,
+    });
     expect(() => planificar(e, POLICIES)).toThrow(ConflictoPoliciesError);
   });
 
@@ -262,7 +305,11 @@ describe('planificar', () => {
     expect(planificar(e, POLICIES)).toEqual([]);
     e.bot.activo = false;
     expect(planificar(e, POLICIES)).toEqual([
-      expect.objectContaining({ tipo: 'actualizar-bot', activo: true, tope: 5 }),
+      expect.objectContaining({
+        tipo: 'actualizar-bot',
+        activo: true,
+        tope: 5,
+      }),
     ]);
   });
 
@@ -307,7 +354,10 @@ describe('pasosDeseados', () => {
     const { bienvenida, fuera_de_horario } = pasosDeseados(POLICIES);
     expect(
       validateStepsForActivation(
-        bienvenida.map((p: Op) => ({ step_type: p.stepType, step_config: p.stepConfig }))
+        bienvenida.map((p: Op) => ({
+          step_type: p.stepType,
+          step_config: p.stepConfig,
+        }))
       )
     ).toEqual([]);
     const [cond, envio] = fuera_de_horario;

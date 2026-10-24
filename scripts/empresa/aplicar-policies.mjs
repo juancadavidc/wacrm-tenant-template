@@ -19,7 +19,11 @@ import { parseArgs } from 'node:util';
 import { createClient } from '@supabase/supabase-js';
 
 import { leerPolicies, PoliciesInvalidasError } from './policies-esquema.mjs';
-import { ConflictoPoliciesError, MARCADORES, planificar } from './policies-plan.mjs';
+import {
+  ConflictoPoliciesError,
+  MARCADORES,
+  planificar,
+} from './policies-plan.mjs';
 
 // Ruta del contrato CT.1 (contracts/cfg/tenant-config.ts, `policiesPath`); una prueba lo fija.
 export const POLICIES_PATH = 'config/policies.yaml';
@@ -74,7 +78,9 @@ export async function leerEstado(cliente, policies) {
         .in('email', correos),
       'leer profiles'
     ) ?? [];
-  const cuentasIds = [...new Set(perfiles.map((p) => p.account_id).filter(Boolean))];
+  const cuentasIds = [
+    ...new Set(perfiles.map((p) => p.account_id).filter(Boolean)),
+  ];
   const cuentas = cuentasIds.length
     ? ok(
         await cliente
@@ -87,9 +93,14 @@ export async function leerEstado(cliente, policies) {
   const duenoDe = new Map(cuentas.map((c) => [c.id, c.owner_user_id]));
 
   const owner = policies.usuarios.find((u) => u.rol === 'owner');
-  const perfilOwner = perfiles.find((p) => p.email.toLowerCase() === owner.correo);
+  const perfilOwner = perfiles.find(
+    (p) => p.email.toLowerCase() === owner.correo
+  );
   const cuenta = perfilOwner?.account_id
-    ? { id: perfilOwner.account_id, ownerUserId: duenoDe.get(perfilOwner.account_id) }
+    ? {
+        id: perfilOwner.account_id,
+        ownerUserId: duenoDe.get(perfilOwner.account_id),
+      }
     : null;
 
   const usuarios = [];
@@ -98,7 +109,12 @@ export async function leerEstado(cliente, policies) {
     if (p.account_id && p.account_id !== cuenta?.id) {
       const esPropia = duenoDe.get(p.account_id) === p.user_id;
       if (esPropia) {
-        const miembros = await contar(cliente, 'profiles', 'account_id', p.account_id);
+        const miembros = await contar(
+          cliente,
+          'profiles',
+          'account_id',
+          p.account_id
+        );
         const datos = await Promise.all(
           ['contacts', 'tags', 'pipelines', 'automations'].map((t) =>
             contar(cliente, t, 'account_id', p.account_id)
@@ -128,7 +144,10 @@ export async function leerEstado(cliente, policies) {
   if (!cuenta) return estado;
 
   estado.etiquetas = ok(
-    await cliente.from('tags').select('id, name, color').eq('account_id', cuenta.id),
+    await cliente
+      .from('tags')
+      .select('id, name, color')
+      .eq('account_id', cuenta.id),
     'leer tags'
   ).map((t) => ({ id: t.id, nombre: t.name, color: t.color }));
 
@@ -206,7 +225,9 @@ export async function leerEstado(cliente, policies) {
   const bot = ok(
     await cliente
       .from('ai_configs')
-      .select('id, is_active, auto_reply_enabled, auto_reply_max_per_conversation')
+      .select(
+        'id, is_active, auto_reply_enabled, auto_reply_max_per_conversation'
+      )
       .eq('account_id', cuenta.id)
       .maybeSingle(),
     'leer ai_configs'
@@ -248,11 +269,19 @@ async function insertarPasos(cliente, automationId, pasos) {
   }
 }
 
-async function moverACuenta(cliente, ctx, { userId, cuentaPersonalId, rol, nombre }) {
+async function moverACuenta(
+  cliente,
+  ctx,
+  { userId, cuentaPersonalId, rol, nombre }
+) {
   ok(
     await cliente
       .from('profiles')
-      .update({ account_id: ctx.cuentaId, account_role: rol, full_name: nombre })
+      .update({
+        account_id: ctx.cuentaId,
+        account_role: rol,
+        full_name: nombre,
+      })
       .eq('user_id', userId),
     'mover usuario a la cuenta'
   );
@@ -339,7 +368,10 @@ export async function ejecutar(cliente, ops, ctx = {}) {
           break;
         case 'actualizar-etiqueta':
           ok(
-            await cliente.from('tags').update({ color: op.color }).eq('id', op.id),
+            await cliente
+              .from('tags')
+              .update({ color: op.color })
+              .eq('id', op.id),
             'actualizar etiqueta'
           );
           break;
@@ -516,7 +548,9 @@ export async function main(argv) {
 
   // 3) El estado de la base y la escritura.
   try {
-    const r = await aplicarPolicies(cliente, policies, { soloPlan: values.plan });
+    const r = await aplicarPolicies(cliente, policies, {
+      soloPlan: values.plan,
+    });
     const cambios = r.ops.filter((o) => o.tipo !== 'aviso');
     if (values.plan) {
       console.log(
@@ -527,12 +561,15 @@ export async function main(argv) {
     } else if (cambios.length === 0) {
       console.log(`Sin cambios: la base ya coincide con ${POLICIES_PATH}`);
     } else {
-      console.log(`Aplicadas ${cambios.length} operaciones desde ${POLICIES_PATH}.`);
+      console.log(
+        `Aplicadas ${cambios.length} operaciones desde ${POLICIES_PATH}.`
+      );
     }
     for (const a of r.avisos) console.log(`Aviso: ${a}`);
     if (r.contrasenas.length > 0) {
       console.log('Contraseñas temporales (se muestran una sola vez):');
-      for (const c of r.contrasenas) console.log(`  ${c.correo}  ${c.contrasena}`);
+      for (const c of r.contrasenas)
+        console.log(`  ${c.correo}  ${c.contrasena}`);
     }
     return 0;
   } catch (e) {
@@ -547,6 +584,9 @@ export async function main(argv) {
   }
 }
 
-if (process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1])) {
+if (
+  process.argv[1] &&
+  fileURLToPath(import.meta.url) === resolve(process.argv[1])
+) {
   process.exitCode = await main(process.argv.slice(2));
 }

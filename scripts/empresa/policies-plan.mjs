@@ -186,7 +186,10 @@ export function planificar(estado, policies) {
           color: e.color,
           posicion,
         });
-      } else if (minus(ex.color) !== minus(e.color) || ex.posicion !== posicion) {
+      } else if (
+        minus(ex.color) !== minus(e.color) ||
+        ex.posicion !== posicion
+      ) {
         ops.push({
           tipo: 'actualizar-etapa',
           id: ex.id,

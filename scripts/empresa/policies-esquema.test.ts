@@ -65,7 +65,11 @@ describe('validarPolicies', () => {
       { usuarios: [U('a@b.co', 'owner'), U('A@b.co', 'admin')] },
       'usuarios',
     ],
-    ['rol desconocido', { usuarios: [U('a@b.co', 'viewer')] }, 'usuarios.0.rol'],
+    [
+      'rol desconocido',
+      { usuarios: [U('a@b.co', 'viewer')] },
+      'usuarios.0.rol',
+    ],
     [
       'etiqueta repetida VIP/vip',
       { etiquetas: [{ nombre: 'VIP' }, { nombre: 'vip' }] },
@@ -83,7 +87,9 @@ describe('validarPolicies', () => {
     ],
     [
       'horario mal escrito',
-      { automatizaciones: { fuera_de_horario: { ...FDH, horario: '6pm-8am' } } },
+      {
+        automatizaciones: { fuera_de_horario: { ...FDH, horario: '6pm-8am' } },
+      },
       'automatizaciones.fuera_de_horario.horario',
     ],
     [
@@ -108,7 +114,9 @@ describe('validarPolicies', () => {
     try {
       validarPolicies(datos);
     } catch (e) {
-      expect((e as PoliciesInvalidasError).problemas.join('\n')).toContain(campo);
+      expect((e as PoliciesInvalidasError).problemas.join('\n')).toContain(
+        campo
+      );
     }
   });
 });

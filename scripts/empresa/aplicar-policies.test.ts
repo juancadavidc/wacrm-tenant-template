@@ -36,7 +36,7 @@ function hijo(policies: string | null, env: string) {
 function cli(dir: string) {
   return spawnSync(process.execPath, [CLI, '--dir', dir], {
     encoding: 'utf8',
-    env: { PATH: process.env['PATH'] ?? '' },
+    env: { PATH: process.env['PATH'] ?? '' } as unknown as NodeJS.ProcessEnv,
     timeout: 30_000,
   });
 }
@@ -47,7 +47,9 @@ afterEach(() => {
 
 describe('aplicar-policies (CLI)', () => {
   it('usa la ruta de policies del contrato CT.1', () => {
-    expect(POLICIES_PATH).toBe(TenantConfigSchema.shape.policiesPath.parse(undefined));
+    expect(POLICIES_PATH).toBe(
+      TenantConfigSchema.shape.policiesPath.parse(undefined)
+    );
   });
 
   it('con un policies.yaml inválido sale 1, nombra el campo y no toca la red', () => {
@@ -64,7 +66,9 @@ describe('aplicar-policies (CLI)', () => {
   });
 
   it('sin SUPABASE_SERVICE_ROLE_KEY sale 1 nombrando la variable', () => {
-    const r = cli(hijo(VALIDO, 'NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:9\n'));
+    const r = cli(
+      hijo(VALIDO, 'NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:9\n')
+    );
     expect(r.status).toBe(1);
     expect(r.stderr).toContain('SUPABASE_SERVICE_ROLE_KEY');
   });
