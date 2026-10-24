@@ -49,7 +49,15 @@ through a `0600` temporary file that is always removed.
   timeout, so the backup line needs its own fixed schedule and a longer
   timeout. A `409` answer means a backup is already running.
 - The `app` service mounts `supabase-db-data` and `supabase-storage-data`
-  read-only at `/var/lib/<volume>`.
+  read-only at `/var/lib/<volume>`. The process runs as `nextjs`, so it must be
+  able to read each volume: for storage, the files must be readable by the
+  `nextjs` uid or a group it belongs to; for the Postgres data directory
+  (owner postgres, mode 0700 by default) initialize it with
+  `--allow-group-access` (mode 0750) and add `nextjs` to that group
+  (`group_add` in the compose). If that is not agreed with CT.2, say so there.
+- The tar of the live Postgres data directory is an inconsistent copy and
+  cannot be restored on its own: the `.dump` file is the source of truth for
+  the database.
 - The `app` environment includes `BACKUP_DB_URL` and the three company
   variables above.
 - The runtime image carries `postgresql17-client` and `rclone` (done in the
