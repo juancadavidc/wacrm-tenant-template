@@ -271,6 +271,9 @@ services:
     # can't desync the app from the mapping and the healthcheck below.
     environment:
       PORT: 3000
+      # Server-side Supabase calls (cron admin clients) reach kong over the
+      # compose network; NEXT_PUBLIC_SUPABASE_URL stays the browser URL.
+      SUPABASE_INTERNAL_URL: http://supabase-kong:8000
     ports:
       # R1: published on loopback only. BASE.2 adds the outbound tunnel.
       - '127.0.0.1:${HOST_PORT:-3000}:3000'

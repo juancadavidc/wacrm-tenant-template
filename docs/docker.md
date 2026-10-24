@@ -67,6 +67,8 @@ docker compose exec -T supabase-db sh -c \
   'for f in /migrations/*.sql; do psql -v ON_ERROR_STOP=1 -U postgres -d postgres -f "$f"; done'
 ```
 
+The integration test (`scripts/compose/compose-up.it.test.ts`) applies them the same way before exercising the cron routes.
+
 The `/migrations` bind-mount is already declared in `docker-compose.yml`.
 CFG.1 can automate this step when it defines the per-tenant startup sequence.
 

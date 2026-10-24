@@ -146,6 +146,21 @@ describe.skipIf(!enabled)('docker compose up on a clean machine', () => {
   }, 900_000);
 
   it('runs the wacrm scheduled tasks from inside the compose network', async () => {
+    // Migrations need auth.users (created by gotrue), so they are applied
+    // after the first `up --wait`, as docs/docker.md describes.
+    execFileSync(
+      'docker',
+      [
+        'compose',
+        'exec',
+        '-T',
+        'supabase-db',
+        'sh',
+        '-c',
+        'for f in /migrations/*.sql; do psql -v ON_ERROR_STOP=1 -U postgres -d postgres -f "$f" >/dev/null || exit 1; done',
+      ],
+      execOpts
+    );
     // 200 (not 503) proves the AUTOMATION_CRON_SECRET header arrived.
     const deadline = Date.now() + 180_000;
     let logs = '';

@@ -8,5 +8,7 @@ code="$(curl -sS -m 60 -o "$out" -w '%{http_code}' \
 echo "${path} ${code}"
 head -c 500 "$out" 2>/dev/null; echo
 rm -f "$out"
-date +%s > /var/run/cron/last-run
-case "$code" in 2??) exit 0 ;; *) exit 1 ;; esac
+case "$code" in
+  2??) date +%s > /var/run/cron/last-run; exit 0 ;;
+  *) exit 1 ;;
+esac
