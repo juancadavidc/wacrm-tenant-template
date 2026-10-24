@@ -37,7 +37,11 @@ services:
       # R1: published on loopback only. BASE.2 adds the outbound tunnel.
       - '127.0.0.1:${KONG_HTTP_PORT:-8000}:8000'
     volumes:
-      - ./docker/supabase/kong/kong.yml:/home/kong/kong.yml:ro
+      # Template: Kong does not expand ${VARS}, the entrypoint renders it.
+      - ./docker/supabase/kong/kong.yml:/home/kong/temp.yml:ro
+    entrypoint: >
+      bash -c 'eval "echo \"$$(cat ~/temp.yml)\"" > ~/kong.yml &&
+      /docker-entrypoint.sh kong docker-start'
     environment:
       KONG_DATABASE: 'off'
       KONG_DECLARATIVE_CONFIG: /home/kong/kong.yml
