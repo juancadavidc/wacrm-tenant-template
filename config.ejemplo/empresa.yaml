@@ -2,4 +2,4 @@
 # al crear el repo hijo (config/empresa.yaml).
 empresa:
   id: empresa-ejemplo
-  nombre: "Empresa de ejemplo"
+  nombre: 'Empresa de ejemplo'

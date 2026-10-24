@@ -120,11 +120,9 @@ writeFileSync(
   join(dir, 'config', 'empresa.yaml'),
   `# Identidad de la empresa.\nempresa:\n  id: ${id}\n  nombre: ${JSON.stringify(nombre)}\n`
 );
-writeFileSync(
-  join(dir, '.env'),
-  ejemplo + llaves + extras.join('\n') + '\n',
-  { mode: 0o600 }
-);
+writeFileSync(join(dir, '.env'), ejemplo + llaves + extras.join('\n') + '\n', {
+  mode: 0o600,
+});
 
 process.stdout.write(
   [

@@ -9,8 +9,8 @@ Fuente de verdad de lo que es de la empresa: `contracts/cfg/tenant-config.ts`.
 
 ## Crear el repo hijo
 
-1. En GitHub, "Use this template" (o `git clone` + `git remote rename origin plantilla`
-   + `git remote add origin <repo-de-la-empresa>`).
+1. En GitHub, "Use this template" (o `git clone`, luego
+   `git remote rename origin plantilla` y `git remote add origin <repo-de-la-empresa>`).
 2. `npm ci`
 3. Crear la configuración y el `.env` de la empresa:
 
@@ -23,6 +23,7 @@ Fuente de verdad de lo que es de la empresa: `contracts/cfg/tenant-config.ts`.
    ```
 
    El `--id` usa minúsculas, dígitos y guiones, y empieza por letra.
+
 4. `docker compose up -d --wait`
 5. `git add config/ && git commit -m "config de la empresa"`
 
@@ -34,22 +35,22 @@ sola vez por empresa y no se cambia (R7): `nueva-empresa` se niega a correr si y
 
 ## Qué es de la empresa y qué del template
 
-| De la empresa | Qué es |
-|---|---|
-| `config/modules.yaml` | Interruptores de módulos (ruta obligatoria) |
-| `config/policies.yaml` | Políticas de la empresa (ruta obligatoria; contenido de CFG.2) |
-| `config/` | Todo lo que esté bajo este prefijo |
-| `config/empresa.yaml` | Identidad de la empresa (`id`, `nombre`) |
-| `.env*` | Todos los archivos de entorno, salvo los ejemplos del template |
-| `ENCRYPTION_KEY` | Variable de entorno |
-| `SUPABASE_SERVICE_ROLE_KEY` | Variable de entorno |
-| `NEXT_PUBLIC_SUPABASE_URL` | Variable de entorno |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Variable de entorno |
-| `META_APP_SECRET` | Variable de entorno |
-| `BACKUP_DESTINO_URI` | Variable de entorno |
-| `BACKUP_DESTINO_CREDENCIAL` | Variable de entorno |
-| `BACKUP_AVISO_WEBHOOK` | Variable de entorno |
-| `COMPOSE_PROJECT_NAME` | Variable de entorno de la empresa; vive en `.env`, así que una actualización del template no la pisa |
+| De la empresa                   | Qué es                                                                                               |
+| ------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| `config/modules.yaml`           | Interruptores de módulos (ruta obligatoria)                                                          |
+| `config/policies.yaml`          | Políticas de la empresa (ruta obligatoria; contenido de CFG.2)                                       |
+| `config/`                       | Todo lo que esté bajo este prefijo                                                                   |
+| `config/empresa.yaml`           | Identidad de la empresa (`id`, `nombre`)                                                             |
+| `.env*`                         | Todos los archivos de entorno, salvo los ejemplos del template                                       |
+| `ENCRYPTION_KEY`                | Variable de entorno                                                                                  |
+| `SUPABASE_SERVICE_ROLE_KEY`     | Variable de entorno                                                                                  |
+| `NEXT_PUBLIC_SUPABASE_URL`      | Variable de entorno                                                                                  |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Variable de entorno                                                                                  |
+| `META_APP_SECRET`               | Variable de entorno                                                                                  |
+| `BACKUP_DESTINO_URI`            | Variable de entorno                                                                                  |
+| `BACKUP_DESTINO_CREDENCIAL`     | Variable de entorno                                                                                  |
+| `BACKUP_AVISO_WEBHOOK`          | Variable de entorno                                                                                  |
+| `COMPOSE_PROJECT_NAME`          | Variable de entorno de la empresa; vive en `.env`, así que una actualización del template no la pisa |
 
 Ejemplos que son del template aunque empiecen por `.env`: `.env.example` y
 `.env.local.example`. Los ejemplos de `config/` viven en `config.ejemplo/`, también del
