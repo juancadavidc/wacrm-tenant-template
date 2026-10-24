@@ -73,7 +73,11 @@ function SignupPageInner() {
     );
     if (!res.ok) {
       const body = await res.json().catch(() => ({}));
-      setError(body.error ?? "Signup failed");
+      setError(
+        body.error === "invite_invalid"
+          ? "Esta invitación ya no es válida. Pide una nueva."
+          : "No se pudo crear la cuenta. Revisa los datos e inténtalo de nuevo.",
+      );
       setLoading(false);
       return;
     }
@@ -84,7 +88,8 @@ function SignupPageInner() {
       setLoading(false);
       return;
     }
-    window.location.href = `/join/${encodeURIComponent(inviteToken ?? "")}`;
+    // La invitación ya quedó canjeada en el servidor.
+    window.location.href = "/dashboard";
     return;
   };
   return (

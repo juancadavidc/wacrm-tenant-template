@@ -4,9 +4,10 @@
 // Registro cerrado (BASE.3): Supabase Auth corre con
 // GOTRUE_DISABLE_SIGNUP=true, así que /auth/v1/signup rechaza el
 // autorregistro. La única vía de alta es esta ruta, que exige una
-// invitación pendiente real (existe, no usada, no vencida) y crea
-// el usuario con la service role. Después el cliente inicia sesión
-// y /join/<token> canjea la invitación.
+// invitación pendiente real (existe, no usada, no vencida), crea
+// el usuario con la service role y canjea la invitación en el mismo
+// paso (redeem_invitation_for_new_user, con la fila bloqueada). Un
+// token da un solo alta. Después el cliente inicia sesión.
 // ============================================================
 
 import { NextResponse } from "next/server";
@@ -61,14 +62,36 @@ export async function POST(
     );
   }
 
-  const { error } = await admin.auth.admin.createUser({
+  const tokenHash = hashInviteToken(token);
+  const { data: created, error } = await admin.auth.admin.createUser({
     email,
     password,
     email_confirm: true,
     user_metadata: { full_name: fullName },
   });
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 400 });
+  if (error || !created?.user) {
+    // No devolvemos el mensaje de Auth: evita enumerar emails registrados.
+    console.error("[invite-signup] createUser error:", error?.message);
+    return NextResponse.json({ error: "signup_failed" }, { status: 400 });
+  }
+  const userId = created.user.id;
+
+  // Alta + canje en un solo paso: la función bloquea la invitación y la
+  // marca usada. Si falla (p. ej. carrera con otro POST), se deshace el alta.
+  const { error: redeemError } = await admin.rpc("redeem_invitation_for_new_user", {
+    p_token_hash: tokenHash,
+    p_user_id: userId,
+  });
+  if (redeemError) {
+    console.error("[invite-signup] redeem error:", redeemError);
+    // accounts.owner_user_id es RESTRICT: primero la cuenta personal, luego el usuario.
+    await admin.from("accounts").delete().eq("owner_user_id", userId);
+    await admin.auth.admin.deleteUser(userId);
+    const invalid = redeemError.code === "22023";
+    return NextResponse.json(
+      { error: invalid ? "invite_invalid" : "server_error" },
+      { status: invalid ? 403 : 500 },
+    );
   }
   return NextResponse.json({ ok: true }, { status: 201 });
 }
