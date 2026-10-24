@@ -10,6 +10,7 @@ import { NextRequest } from "next/server";
 //                      i.e. the freshly *rotated* auth token. The whole point
 //                      of the test is that these must survive onto whatever
 //                      response the middleware returns — including redirects.
+let mockInviteOk = true;
 let mockUser: { id: string } | null = null;
 let refreshedCookies: Array<{
   name: string;
@@ -25,6 +26,7 @@ vi.mock("@supabase/ssr", () => ({
       cookies: { setAll: (c: typeof refreshedCookies) => void };
     },
   ) => ({
+    rpc: async () => ({ data: { ok: mockInviteOk } }),
     auth: {
       // Mirrors real auth-js: an expired access token is transparently
       // refreshed inside getUser(), which rotates the refresh token and
@@ -44,6 +46,7 @@ beforeEach(() => {
   process.env.NEXT_PUBLIC_SUPABASE_URL = "https://test.supabase.co";
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = "anon-key";
   mockUser = null;
+  mockInviteOk = true;
   refreshedCookies = [];
 });
 
@@ -161,7 +164,19 @@ describe("middleware — registro cerrado: /signup solo con invite", () => {
     const res = await middleware(
       new NextRequest("https://app.test/signup?invite=abc123"),
     );
+    expect(res.status).toBe(200);
     expect(res.headers.get("location")).toBeNull();
+    expect(res.headers.get("x-middleware-next")).toBe("1");
+  });
+
+  it("redirige /signup?invite=x cuando la invitación no existe, venció o se usó", async () => {
+    mockUser = null;
+    mockInviteOk = false;
+    const res = await middleware(
+      new NextRequest("https://app.test/signup?invite=x"),
+    );
+    expect(res.status).toBe(307);
+    expect(res.headers.get("location")).toContain("/login");
   });
 
   it("deja pasar /signup?invite=abc&extra=x", async () => {
@@ -169,6 +184,7 @@ describe("middleware — registro cerrado: /signup solo con invite", () => {
     const res = await middleware(
       new NextRequest("https://app.test/signup?invite=abc&extra=x"),
     );
+    expect(res.status).toBe(200);
     expect(res.headers.get("location")).toBeNull();
   });
 

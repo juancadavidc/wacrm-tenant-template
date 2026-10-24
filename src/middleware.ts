@@ -1,6 +1,24 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
+// SHA-256 hex con Web Crypto (el middleware corre en Edge, sin node:crypto).
+// Debe coincidir con hashInviteToken de src/lib/auth/invitations.ts.
+async function isPendingInvitation(
+  supabase: { rpc: (fn: string, args: Record<string, unknown>) => PromiseLike<{ data: unknown }> },
+  token: string,
+): Promise<boolean> {
+  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(token))
+  const hash = Array.from(new Uint8Array(digest))
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('')
+  try {
+    const { data } = await supabase.rpc('peek_invitation', { p_token_hash: hash })
+    return (data as { ok?: boolean } | null)?.ok === true
+  } catch {
+    return false
+  }
+}
+
 export async function middleware(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request })
 
@@ -42,17 +60,18 @@ export async function middleware(request: NextRequest) {
     return response
   }
 
-  // Registro cerrado: /signup solo está disponible con token de invitación.
-  // Sin él redirigimos a /login para que el usuario entre por invitación.
-  if (
-    !user &&
-    request.nextUrl.pathname === '/signup' &&
-    !request.nextUrl.searchParams.get('invite')
-  ) {
-    const url = request.nextUrl.clone()
-    url.pathname = '/login'
-    url.search = ''
-    return withRefreshedCookies(NextResponse.redirect(url))
+  // Registro cerrado: /signup solo está disponible con una invitación
+  // pendiente real (existe, no usada, no vencida). Sin ella redirigimos a
+  // /login. El cierre de fondo está en Auth (GOTRUE_DISABLE_SIGNUP=true) y en
+  // POST /api/invitations/[token]/signup; esto solo evita mostrar la página.
+  if (!user && request.nextUrl.pathname === '/signup') {
+    const invite = request.nextUrl.searchParams.get('invite')
+    if (!invite || !(await isPendingInvitation(supabase, invite))) {
+      const url = request.nextUrl.clone()
+      url.pathname = '/login'
+      url.search = ''
+      return withRefreshedCookies(NextResponse.redirect(url))
+    }
   }
 
   // Auth pages - redirect to dashboard if already logged in.
