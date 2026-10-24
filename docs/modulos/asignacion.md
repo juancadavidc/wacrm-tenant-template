@@ -50,3 +50,7 @@ select asignado_en, regla, asesor_id, contacto_id from mod_asignacion_registro o
 ```
 
 `conversations.assigned_agent_id` guarda el `user_id` del asesor (el de `auth.users`).
+
+## Con la asignación encendida la IA deja de responder sola
+
+Mientras el módulo está encendido, cada conversación nueva queda asignada a un asesor humano y la IA ya no responde sola en ella: la atiende el asesor asignado. Apaga el módulo si quieres que la IA vuelva a contestar de forma automática.

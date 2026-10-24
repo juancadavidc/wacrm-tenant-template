@@ -88,5 +88,5 @@ jobs:
       - name: Dump logs on failure
         if: failure()
         run: |
-          docker compose --project-name asignacion-it ps
-          docker compose --project-name asignacion-it logs --tail 200
+          docker compose --project-name wacrm-asignacion-it ps
+          docker compose --project-name wacrm-asignacion-it logs --tail 200
