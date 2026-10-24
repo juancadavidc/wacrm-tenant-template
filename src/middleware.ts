@@ -42,6 +42,19 @@ export async function middleware(request: NextRequest) {
     return response
   }
 
+  // Registro cerrado: /signup solo está disponible con token de invitación.
+  // Sin él redirigimos a /login para que el usuario entre por invitación.
+  if (
+    !user &&
+    request.nextUrl.pathname === '/signup' &&
+    !request.nextUrl.searchParams.get('invite')
+  ) {
+    const url = request.nextUrl.clone()
+    url.pathname = '/login'
+    url.search = ''
+    return withRefreshedCookies(NextResponse.redirect(url))
+  }
+
   // Auth pages - redirect to dashboard if already logged in.
   // Exception: when an invite token is in the query string we
   // send the already-signed-in user to /join/<token> instead so

@@ -138,3 +138,54 @@ describe("middleware — every dashboard route requires a session", () => {
     expect(new URL(res.headers.get("location")!).pathname).toBe("/login");
   });
 });
+
+describe("middleware — registro cerrado: /signup solo con invite", () => {
+  it("redirige /signup sin invite a /login", async () => {
+    mockUser = null;
+    const res = await middleware(new NextRequest("https://app.test/signup"));
+    expect(res.status).toBe(307);
+    expect(res.headers.get("location")).toContain("/login");
+  });
+
+  it("redirige /signup?invite= (vacío) a /login", async () => {
+    mockUser = null;
+    const res = await middleware(
+      new NextRequest("https://app.test/signup?invite="),
+    );
+    expect(res.status).toBe(307);
+    expect(res.headers.get("location")).toContain("/login");
+  });
+
+  it("deja pasar /signup?invite=abc123", async () => {
+    mockUser = null;
+    const res = await middleware(
+      new NextRequest("https://app.test/signup?invite=abc123"),
+    );
+    expect(res.headers.get("location")).toBeNull();
+  });
+
+  it("deja pasar /signup?invite=abc&extra=x", async () => {
+    mockUser = null;
+    const res = await middleware(
+      new NextRequest("https://app.test/signup?invite=abc&extra=x"),
+    );
+    expect(res.headers.get("location")).toBeNull();
+  });
+
+  it("no regresión: usuario autenticado en /signup?invite=abc va a /join/abc", async () => {
+    mockUser = { id: "user-1" };
+    refreshedCookies = [ROTATED];
+    const res = await middleware(
+      new NextRequest("https://app.test/signup?invite=abc"),
+    );
+    expect(res.headers.get("location")).toContain("/join/abc");
+  });
+
+  it("propaga cookies rotadas en el redirect de registro bloqueado", async () => {
+    mockUser = null;
+    refreshedCookies = [{ ...ROTATED, value: "cleared" }];
+    const res = await middleware(new NextRequest("https://app.test/signup"));
+    expect(res.status).toBe(307);
+    expect(res.cookies.get(ROTATED.name)?.value).toBe("cleared");
+  });
+});
