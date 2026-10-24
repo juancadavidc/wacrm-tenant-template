@@ -68,14 +68,14 @@ export function esVariableDeEmpresa(nombre: string): boolean {
 
 const IDENTIFICADOR = /^[a-z][a-z0-9-]*$/;
 
-export const BackupConfigSchema = z.object({
+export const BackupConfigSchema = z.strictObject({
   destinoUri: z.string().regex(/^(s3|b2|gs|file):\/\/.+/),
   credencial: z.string().min(1),
   avisoWebhook: z.url(),
   hora: z.literal(HORA_BACKUP).default(HORA_BACKUP),
 });
 
-export const ModuloSwitchSchema = z.object({
+export const ModuloSwitchSchema = z.strictObject({
   activo: z.boolean(),
   /** Opaca en I1: su esquema lo fija CT.3 (I3). */
   config: z.record(z.string(), z.unknown()).default({}),

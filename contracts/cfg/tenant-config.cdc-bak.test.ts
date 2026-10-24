@@ -39,6 +39,13 @@ describe('CDC BAK.1 · destino y aviso del backup', () => {
     ).toThrow();
   });
 
+  it('rechaza una llave desconocida (p. ej. destinoUrl mal escrita)', () => {
+    const { backup } = stubTenantConfig();
+    expect(() =>
+      BackupConfigSchema.parse({ ...backup, destinoUrl: 's3://otro' })
+    ).toThrow();
+  });
+
   it('deja los secretos del backup del lado de la empresa', () => {
     for (const nombre of [
       'BACKUP_DESTINO_URI',

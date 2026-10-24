@@ -30,6 +30,15 @@ describe('CDC MOD.1 · interruptores de módulos', () => {
     ).not.toThrow();
   });
 
+  it('rechaza una llave desconocida en el interruptor (p. ej. activa)', () => {
+    expect(() =>
+      ModulosSchema.parse({ asignacion: { activa: true, config: {} } })
+    ).toThrow();
+    expect(() =>
+      ModulosSchema.parse({ asignacion: { activo: true, confg: {} } })
+    ).toThrow();
+  });
+
   it('exige el interruptor y rechaza un nombre de módulo inválido', () => {
     expect(() => ModulosSchema.parse({ asignacion: { config: {} } })).toThrow();
     expect(() =>
