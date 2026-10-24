@@ -34,3 +34,8 @@ Dentro del contenedor, el servidor usa `SUPABASE_INTERNAL_URL` (`http://supabase
 y no la URL pública: `src/lib/supabase/internal-url.ts`. Como supabase-js deriva el nombre de la
 cookie de sesión del hostname de la URL, se fija con `supabaseAuthCookieName()` al nombre que
 deriva el navegador desde la URL pública.
+
+Las URLs que arma el servidor con ese cliente (por ejemplo las de Storage) salen con el host
+interno (`http://supabase-kong:8000`) y no sirven en el navegador ni en Meta. Antes de persistir
+una, pásala por `toPublicSupabaseUrl()` (ya lo hace el espejo de adjuntos entrantes en
+`mirror-inbound-media.ts`).

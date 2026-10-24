@@ -343,7 +343,7 @@ services:
     profiles: ['tunnel']
     command: tunnel --no-autoupdate --metrics 127.0.0.1:2000 run
     environment:
-      TUNNEL_TOKEN: ${CLOUDFLARE_TUNNEL_TOKEN:?set CLOUDFLARE_TUNNEL_TOKEN in .env}
+      TUNNEL_TOKEN: ${CLOUDFLARE_TUNNEL_TOKEN:-}
     restart: unless-stopped
     depends_on:
       app:
