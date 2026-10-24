@@ -36,6 +36,12 @@ export function leerInterruptores(
     throw new ErrorInterruptores(`YAML ilegible en ${ruta}: ${String(e)}`);
   }
   if (doc === undefined || doc === null) return {};
+  // `modulos:` sin entradas (todas comentadas) = todo apagado (R16).
+  if (
+    typeof doc === 'object' &&
+    (doc as { modulos?: unknown }).modulos === null
+  )
+    return {};
   const r = ArchivoSchema.safeParse(doc);
   if (!r.success) {
     const problemas = r.error.issues

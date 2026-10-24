@@ -67,3 +67,12 @@ describe('leerInterruptores', () => {
     expect(dirConfigEmpresa()).toBe(path.join(process.cwd(), 'config'));
   });
 });
+
+describe('modulos: vacío', () => {
+  it('`modulos:` sin entradas = todo apagado', () => {
+    const d = fs.mkdtempSync(path.join(os.tmpdir(), 'intr-'));
+    fs.writeFileSync(path.join(d, 'modules.yaml'), 'modulos:\n  # demo:\n');
+    expect(leerInterruptores(d)).toEqual({});
+    fs.rmSync(d, { recursive: true, force: true });
+  });
+});

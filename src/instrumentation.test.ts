@@ -19,6 +19,7 @@ vi.mock('@/modulos/registro', async () => {
   };
 });
 
+let exit: ReturnType<typeof vi.spyOn>;
 const dirs: string[] = [];
 const dirVacio = () => {
   const d = fs.mkdtempSync(path.join(os.tmpdir(), 'instr-'));
@@ -35,6 +36,10 @@ beforeEach(() => {
   vi.stubEnv('NEXT_RUNTIME', 'nodejs');
   fijarFlujoEntrada(undefined);
   vi.spyOn(console, 'log').mockImplementation(() => {});
+  vi.spyOn(console, 'error').mockImplementation(() => {});
+  exit = vi
+    .spyOn(process, 'exit')
+    .mockImplementation((() => undefined) as never);
 });
 afterEach(() => {
   fijarFlujoEntrada(undefined);
@@ -53,33 +58,38 @@ describe('register (arranque)', () => {
       )
     );
     await expect(register()).resolves.toBeUndefined();
+    expect(exit).not.toHaveBeenCalled();
   });
-  it('config de módulo inválida: el arranque falla (R18)', async () => {
+  it('config de módulo inválida: el arranque sale con 1 (R18)', async () => {
     vi.stubEnv(
       'CONFIG_EMPRESA_DIR',
       conYaml(
         'modulos:\n  demo:\n    activo: true\n    config:\n      limite: 0\n'
       )
     );
-    await expect(register()).rejects.toThrow(/config inválida del módulo demo/);
+    await register();
+    expect(exit).toHaveBeenCalledWith(1);
   });
   it('módulo encendido que no existe: el arranque falla', async () => {
     vi.stubEnv(
       'CONFIG_EMPRESA_DIR',
       conYaml('modulos:\n  asignacoin:\n    activo: true\n')
     );
-    await expect(register()).rejects.toThrow(/asignacoin/);
+    await register();
+    expect(exit).toHaveBeenCalledWith(1);
   });
   it('modules.yaml con forma inválida: el arranque falla', async () => {
     vi.stubEnv(
       'CONFIG_EMPRESA_DIR',
       conYaml('modulos:\n  demo:\n    activa: true\n')
     );
-    await expect(register()).rejects.toThrow(/modules\.yaml/);
+    await register();
+    expect(exit).toHaveBeenCalledWith(1);
   });
   it('sin config/: arranca con todo apagado', async () => {
     vi.stubEnv('CONFIG_EMPRESA_DIR', dirVacio());
     await expect(register()).resolves.toBeUndefined();
+    expect(exit).not.toHaveBeenCalled();
   });
   it('en el runtime edge no hace nada', async () => {
     vi.stubEnv('NEXT_RUNTIME', 'edge');
@@ -90,5 +100,6 @@ describe('register (arranque)', () => {
       )
     );
     await expect(register()).resolves.toBeUndefined();
+    expect(exit).not.toHaveBeenCalled();
   });
 });
