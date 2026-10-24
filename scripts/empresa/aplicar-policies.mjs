@@ -58,6 +58,36 @@ function ok({ data, error }, que) {
   return data;
 }
 
+/**
+ * Tablas con datos de la cuenta que `redeem_invitation` revisa antes de borrar una cuenta personal
+ * (supabase/migrations/047_account_membership_integrity.sql). Una prueba compara las dos listas.
+ */
+export const TABLAS_CUENTA = [
+  'contacts',
+  'conversations',
+  'broadcasts',
+  'automations',
+  'automation_logs',
+  'automation_pending_executions',
+  'flows',
+  'flow_runs',
+  'pipelines',
+  'deals',
+  'message_templates',
+  'tags',
+  'custom_fields',
+  'contact_notes',
+  'whatsapp_config',
+  'api_keys',
+  'webhook_endpoints',
+  'quick_replies',
+  'notifications',
+  'ai_configs',
+  'ai_knowledge_documents',
+  'ai_knowledge_chunks',
+  'ai_usage_log',
+];
+
 async function contar(cliente, tabla, columna, valor) {
   const r = await cliente
     .from(tabla)
@@ -116,7 +146,7 @@ export async function leerEstado(cliente, policies) {
           p.account_id
         );
         const datos = await Promise.all(
-          ['contacts', 'tags', 'pipelines', 'automations'].map((t) =>
+          TABLAS_CUENTA.map((t) =>
             contar(cliente, t, 'account_id', p.account_id)
           )
         );
@@ -477,10 +507,14 @@ export async function ejecutar(cliente, ops, ctx = {}) {
           throw new Error(`operación desconocida: ${op.tipo}`);
       }
     } catch (e) {
-      throw new Error(
+      // Las contraseñas ya generadas viajan con el error: en la siguiente corrida esos usuarios
+      // ya existen y no se vuelven a generar.
+      const error = new Error(
         `${op.tipo}: ${e instanceof Error ? e.message : String(e)}`,
         { cause: e }
       );
+      error.contrasenas = contrasenas;
+      throw error;
     }
   }
   return { contrasenas, avisos };
@@ -513,6 +547,12 @@ function describir(op) {
     .map(([k, v]) => `${k}=${v}`)
     .join(' ');
   return `${tipo}${detalle ? ` ${detalle}` : ''}`;
+}
+
+export function imprimirContrasenas(contrasenas) {
+  if (contrasenas.length === 0) return;
+  console.log('Contraseñas temporales (se muestran una sola vez):');
+  for (const c of contrasenas) console.log(`  ${c.correo}  ${c.contrasena}`);
 }
 
 export async function main(argv) {
@@ -566,17 +606,14 @@ export async function main(argv) {
       );
     }
     for (const a of r.avisos) console.log(`Aviso: ${a}`);
-    if (r.contrasenas.length > 0) {
-      console.log('Contraseñas temporales (se muestran una sola vez):');
-      for (const c of r.contrasenas)
-        console.log(`  ${c.correo}  ${c.contrasena}`);
-    }
+    imprimirContrasenas(r.contrasenas);
     return 0;
   } catch (e) {
     if (e instanceof ConflictoPoliciesError) {
       console.error(e.message);
       return 2;
     }
+    imprimirContrasenas(e?.contrasenas ?? []);
     console.error(
       `Falló al aplicar policies: ${e instanceof Error ? e.message : e}\nVolver a correr es seguro: solo se aplica lo que falte.`
     );
