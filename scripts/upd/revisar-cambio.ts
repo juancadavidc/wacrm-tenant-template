@@ -96,7 +96,9 @@ export function revisarCambio(
     if (esRutaDeEmpresa(c.ruta)) bloqueadas.add(c.ruta);
   }
   const rutasEmpresa = [...bloqueadas].sort();
-  const tocaCompose = cambios.some((c) => c.ruta === 'docker-compose.yml');
+  const tocaCompose = cambios.some(
+    (c) => c.ruta === 'docker-compose.yml' || c.rutaOrigen === 'docker-compose.yml',
+  );
   const revCompose = tocaCompose && compose ? revisarCompose(compose) : null;
   return {
     ok: rutasEmpresa.length === 0 && (revCompose?.bloqueos.length ?? 0) === 0,

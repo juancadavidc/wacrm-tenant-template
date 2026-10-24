@@ -157,6 +157,40 @@ describe('UPD.1 · merge de la plantilla en un hijo', () => {
     expect(hashes()).toEqual(antes);
   });
 
+  it('la plantilla trae un .env versionado: rechaza sin tocar el .env del hijo', () => {
+    git(plantilla, 'switch', '-q', 'main');
+    escribir(plantilla, '.env', 'ENCRYPTION_KEY=de-la-plantilla\n');
+    git(plantilla, 'add', '-f', '.env');
+    git(plantilla, 'commit', '-q', '-m', 'versiona .env');
+    const rama = git(hijo, 'symbolic-ref', '--short', 'HEAD').trim();
+
+    const r = correrProcedimiento(hijo);
+    expect(r.codigo, r.salida).toBe(1);
+    expect(readFileSync(join(hijo, '.env'), 'utf8')).toBe(
+      'ENCRYPTION_KEY=secreto\n',
+    );
+    expect(hashes()).toEqual(antes);
+    expect(git(hijo, 'symbolic-ref', '--short', 'HEAD').trim()).toBe(rama);
+    expect(git(hijo, 'branch', '--list', 'upd/2026-01-01').trim()).toBe('');
+  });
+
+  it('historias sin relación: sale con 3 y no deja rama ni cambios', () => {
+    const otro = join(tmp, 'otro');
+    mkdirSync(otro);
+    git(otro, 'init', '-q', '-b', 'main');
+    configurar(otro);
+    escribir(otro, 'src/b.ts', 'export const b = 1;\n');
+    commit(otro, 'raíz distinta');
+    git(hijo, 'remote', 'set-url', 'template', otro);
+
+    const r = correrProcedimiento(hijo);
+    expect(r.codigo, r.salida).toBe(3);
+    expect(r.salida).toContain('no comparte historia');
+    expect(git(hijo, 'status', '--porcelain').trim()).toBe('');
+    expect(git(hijo, 'branch', '--list', 'upd/2026-01-01').trim()).toBe('');
+    expect(hashes()).toEqual(antes);
+  });
+
   it('árbol sucio: se niega a arrancar', () => {
     escribir(hijo, 'src/local.ts', 'x\n');
     const r = correrProcedimiento(hijo);

@@ -52,12 +52,14 @@ export function cambiosDesdeGit(repo: string, origen: Origen): CambioArchivo[] {
       'HEAD',
     ]),
   );
-  const sinResolver = git(repo, ['diff', '--name-only', '-z', '--diff-filter=U'])
-    .split('\0')
-    .filter((r) => r !== '');
+  const sinResolver = new Set(
+    git(repo, ['diff', '--name-only', '-z', '--diff-filter=U'])
+      .split('\0')
+      .filter((r) => r !== ''),
+  );
   const conocidas = new Set(cambios.map((c) => c.ruta));
   const resultado = cambios.map((c) =>
-    sinResolver.includes(c.ruta) ? { ...c, estado: 'U' as const } : c,
+    sinResolver.has(c.ruta) ? { ...c, estado: 'U' as const } : c,
   );
   for (const ruta of sinResolver) {
     if (!conocidas.has(ruta)) resultado.push({ estado: 'U', ruta });
@@ -110,7 +112,7 @@ export function composeDesdeGit(
   origen: Origen,
 ): ComposeAntesDespues | undefined {
   const cambios = cambiosDesdeGit(repo, origen);
-  if (!cambios.some((c) => c.ruta === COMPOSE)) return undefined;
+  if (!cambios.some((c) => c.ruta === COMPOSE || c.rutaOrigen === COMPOSE)) return undefined;
   const l = lados(repo, origen);
   const textoAntes = gitOpcional(repo, ['show', `${l.antes}:${COMPOSE}`]);
   if (textoAntes === undefined) return undefined; // compose nuevo: no hay topología previa
