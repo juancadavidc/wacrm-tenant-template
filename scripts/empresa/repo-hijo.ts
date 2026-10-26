@@ -10,9 +10,15 @@ import {
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 
+import { esRutaDeEmpresa } from '../../contracts/cfg/tenant-config';
+
 export const RAIZ_TEMPLATE = process.cwd();
 
-/** Archivos versionados del template que existen en el árbol de trabajo. */
+/**
+ * Archivos versionados del template que existen en el árbol de trabajo. Excluye las
+ * rutas de la empresa: en un repo hijo `config/` ya está versionado y copiarlo haría
+ * que nueva-empresa se niegue a correr.
+ */
 export function archivosDelTemplate(): string[] {
   const salida = execFileSync('git', ['ls-files', '-z'], {
     cwd: RAIZ_TEMPLATE,
@@ -21,7 +27,10 @@ export function archivosDelTemplate(): string[] {
   });
   return salida
     .split('\0')
-    .filter((f) => f !== '' && existsSync(join(RAIZ_TEMPLATE, f)));
+    .filter(
+      (f) =>
+        f !== '' && !esRutaDeEmpresa(f) && existsSync(join(RAIZ_TEMPLATE, f))
+    );
 }
 
 /** KEY=VALUE por línea; ignora comentarios y vacías; la última definición gana. */
