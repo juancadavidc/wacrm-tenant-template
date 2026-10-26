@@ -1,0 +1,27 @@
+name: Dependabot solo en la plantilla
+
+# Los hijos heredan .github/dependabot.yml, pero sus dependencias llegan desde
+# la plantilla por UPD (R13): en un hijo, los PRs de dependabot se cierran solos.
+# pull_request_target corre con el token del repo base, que puede cerrar el PR;
+# no hace checkout del código del PR.
+on:
+  pull_request_target:
+    types: [opened, reopened]
+
+permissions:
+  pull-requests: write
+  contents: write # --delete-branch
+
+jobs:
+  cerrar:
+    name: Dependabot · cerrar en repo hijo
+    if: github.repository != 'juancadavidc/wacrm-tenant-template' && github.event.pull_request.user.login == 'dependabot[bot]'
+    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
+    steps:
+      - run: |
+          gh pr close "$PR" -R "$REPO" --delete-branch --comment \
+            "Se cierra: en un repo hijo las dependencias llegan desde juancadavidc/wacrm-tenant-template por UPD (R13). Si hace falta este bump, va como PR a la plantilla."
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ github.event.pull_request.number }}
+          REPO: ${{ github.repository }}
