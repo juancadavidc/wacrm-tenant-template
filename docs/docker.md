@@ -71,6 +71,11 @@ Module migrations (`mod_<name>_NNN.sql`, see `docs/modulos.md`) live in the same
 
 The integration test (`scripts/compose/compose-up.it.test.ts`) applies them the same way before exercising the cron routes.
 
+`make migrar` runs the same loop. `make reiniciar` starts a local install from
+zero: it drops this project's volumes (asks you to type the project name first),
+brings the stack up, applies the migrations and then `config/policies.yaml`
+(`make policies`).
+
 The `/migrations` bind-mount is already declared in `docker-compose.yml`.
 CFG.1 can automate this step when it defines the per-tenant startup sequence.
 
