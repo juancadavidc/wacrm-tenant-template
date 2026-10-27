@@ -21,15 +21,22 @@ corta el acceso en la siguiente petición, sin esperar a que venza la sesión.
 Desde el checkout del repo de la empresa, con la base arriba:
 
 ```bash
-node scripts/empresa/superadmin.mjs --correo juan@ejemplo.co [--cuenta <uuid>] [--dir <repo>]
+node scripts/empresa/superadmin.mjs --correo juan@ejemplo.co [--cuenta <uuid> | --owner <correo>] [--dir <repo>]
 node scripts/empresa/superadmin.mjs --correo juan@ejemplo.co --quitar
 ```
 
 - Si el correo no existe, crea el usuario y muestra **una sola vez** una
   contraseña temporal.
-- El superadmin tiene que ser un usuario **aparte** del owner. El script se
-  niega si el usuario es miembro de la cuenta de la empresa (por ejemplo, el
-  owner que es su único miembro) o de una cuenta con otros usuarios.
+- El superadmin puede ser un usuario **aparte** o un miembro de la cuenta de la
+  empresa (incluido el owner). La marca no es un rol de cuenta: quien la tiene
+  conserva su rol (owner, admin…) y además entra a `/superadmin`. Si das la
+  marca a un miembro, quien tenga ese acceso puede prender y apagar las
+  secciones contratadas de su propia empresa; si la instalación es de un
+  cliente al que se le cobra por secciones, usa un usuario aparte.
+- Un usuario que el script **crea** nace fuera de la cuenta de la empresa: al
+  crearlo, la base le abre una cuenta personal vacía. Para que sea
+  miembro de la empresa, muévelo después (perfil y rol en `profiles`) y borra
+  esa cuenta personal.
 - Es idempotente. Lee el `.env` del directorio (`--dir`, por defecto el actual).
 
 ## Cuenta de la empresa: `EMPRESA_ACCOUNT_ID`
@@ -40,7 +47,9 @@ ejecución. Al dar el rol, el script la **escribe en el `.env`** de la
 instalación:
 
 1. la que pases con `--cuenta <uuid>`;
-2. si no, la que ya esté en `EMPRESA_ACCOUNT_ID`.
+2. si no, la que posee el correo de `--owner <correo>` (tiene que poseer
+   exactamente una; si posee varias, usa `--cuenta`);
+3. si no, la que ya esté en `EMPRESA_ACCOUNT_ID`.
 
 Si no hay ninguna, o el uuid no existe en la base, el script falla con un
 mensaje claro: nunca adivina la cuenta.

@@ -4,7 +4,7 @@
  * el .env la cuenta de la empresa (EMPRESA_ACCOUNT_ID).
  *
  * Uso (desde el checkout del repo hijo, con la base arriba):
- *   node scripts/empresa/superadmin.mjs --correo <c> [--cuenta <uuid>] [--quitar] [--dir <repo>]
+ *   node scripts/empresa/superadmin.mjs --correo <c> [--cuenta <uuid> | --owner <correo>] [--quitar] [--dir <repo>]
  *
  * Códigos de salida: 0 hecho · 1 argumentos, configuración o regla incumplida.
  * Ver docs/superadmin.md.
@@ -42,14 +42,21 @@ export async function buscarUsuario(cliente, correo) {
 }
 
 /**
- * Cuenta de la empresa: --cuenta o EMPRESA_ACCOUNT_ID, y tiene que existir.
- * Nunca se deduce: si falta, falla.
+ * Cuenta de la empresa: --cuenta, o la que posee el correo de --owner, o
+ * EMPRESA_ACCOUNT_ID (en ese orden), y tiene que existir. Nunca se deduce
+ * sin que se diga cuál: cada miembro que se saca crea una cuenta personal, así
+ * que "la única cuenta" o "la más antigua" no son confiables. Por eso --owner
+ * exige que el correo posea exactamente una.
  */
-export async function resolverCuentaEmpresa(cliente, { cuenta, env = {} }) {
+export async function resolverCuentaEmpresa(
+  cliente,
+  { cuenta, owner, env = {} }
+) {
+  if (!cuenta && owner) return cuentaDelOwner(cliente, owner);
   const dicha = (cuenta ?? env[VARIABLE_CUENTA] ?? '').trim();
   if (!dicha) {
     throw new Error(
-      `falta la cuenta de la empresa: pasa --cuenta <uuid> o define ${VARIABLE_CUENTA} en el .env`
+      `falta la cuenta de la empresa: pasa --cuenta <uuid> o --owner <correo>, o define ${VARIABLE_CUENTA} en el .env`
     );
   }
   if (!UUID.test(dicha)) {
@@ -61,6 +68,25 @@ export async function resolverCuentaEmpresa(cliente, { cuenta, env = {} }) {
   );
   if (!c) throw new Error(`la cuenta ${dicha} no existe en esta base`);
   return dicha;
+}
+
+async function cuentaDelOwner(cliente, correo) {
+  const dueno = await buscarUsuario(cliente, correo);
+  if (!dueno) throw new Error(`--owner: no existe el usuario ${correo}`);
+  const cuentas =
+    ok(
+      await cliente.from('accounts').select('id').eq('owner_user_id', dueno.id),
+      'leer las cuentas del owner'
+    ) ?? [];
+  if (cuentas.length === 0) {
+    throw new Error(`--owner: ${correo} no es owner de ninguna cuenta`);
+  }
+  if (cuentas.length > 1) {
+    throw new Error(
+      `--owner: ${correo} es owner de ${cuentas.length} cuentas; pasa --cuenta <uuid>`
+    );
+  }
+  return cuentas[0].id;
 }
 
 /** Escribe (o reemplaza) KEY=valor en el .env, sin tocar el resto. */
@@ -83,7 +109,7 @@ export function escribirVariableEnv(ruta, clave, valor) {
 /**
  * @param {any} cliente
  * @param {string} correo
- * @param {{ quitar?: boolean, cuenta?: string, env?: Record<string, string | undefined> }} [opciones]
+ * @param {{ quitar?: boolean, cuenta?: string, owner?: string, env?: Record<string, string | undefined> }} [opciones]
  *
  * Da o quita la marca. Al marcar resuelve la cuenta de la empresa y la
  * devuelve en `cuentaEmpresaId` para que quien llama la deje en el .env.
@@ -91,7 +117,7 @@ export function escribirVariableEnv(ruta, clave, valor) {
 export async function darSuperadmin(
   cliente,
   correo,
-  { quitar = false, cuenta, env = {} } = {}
+  { quitar = false, cuenta, owner, env = {} } = {}
 ) {
   const usuario = await buscarUsuario(cliente, correo);
   if (quitar) {
@@ -105,7 +131,11 @@ export async function darSuperadmin(
     return { accion: 'quitado' };
   }
 
-  const cuentaEmpresaId = await resolverCuentaEmpresa(cliente, { cuenta, env });
+  const cuentaEmpresaId = await resolverCuentaEmpresa(cliente, {
+    cuenta,
+    owner,
+    env,
+  });
 
   if (!usuario) {
     const contrasena = randomBytes(18).toString('base64url');
@@ -121,35 +151,6 @@ export async function darSuperadmin(
     return { accion: 'creado', contrasena, cuentaEmpresaId };
   }
 
-  const perfiles =
-    ok(
-      await cliente
-        .from('profiles')
-        .select('user_id, account_id')
-        .eq('user_id', usuario.id),
-      'leer el perfil'
-    ) ?? [];
-  const cuentaPropia = perfiles[0]?.account_id;
-  if (cuentaPropia && cuentaPropia === cuentaEmpresaId) {
-    throw new Error(
-      `${correo} es miembro de la cuenta de la empresa; el superadmin tiene que ser un usuario aparte`
-    );
-  }
-  if (cuentaPropia) {
-    const miembros =
-      ok(
-        await cliente
-          .from('profiles')
-          .select('user_id')
-          .eq('account_id', cuentaPropia),
-        'leer los miembros'
-      ) ?? [];
-    if (miembros.some((m) => m.user_id !== usuario.id)) {
-      throw new Error(
-        `${correo} es miembro de una cuenta con otros usuarios; el superadmin tiene que ser un usuario aparte`
-      );
-    }
-  }
   ok(
     await cliente.auth.admin.updateUserById(usuario.id, {
       app_metadata: { ...(usuario.app_metadata ?? {}), [MARCA]: true },
@@ -167,6 +168,7 @@ export async function main(argv) {
       options: {
         correo: { type: 'string' },
         cuenta: { type: 'string' },
+        owner: { type: 'string' },
         quitar: { type: 'boolean', default: false },
         dir: { type: 'string' },
       },
@@ -177,8 +179,12 @@ export async function main(argv) {
   }
   if (!args.correo) {
     console.error(
-      'Uso: node scripts/empresa/superadmin.mjs --correo <c> [--cuenta <uuid>] [--quitar] [--dir <repo>]'
+      'Uso: node scripts/empresa/superadmin.mjs --correo <c> [--cuenta <uuid> | --owner <correo>] [--quitar] [--dir <repo>]'
     );
+    return 1;
+  }
+  if (args.cuenta && args.owner) {
+    console.error('Pasa --cuenta o --owner, no los dos.');
     return 1;
   }
   const dir = resolve(args.dir ?? process.cwd());
@@ -189,6 +195,7 @@ export async function main(argv) {
     const r = await darSuperadmin(cliente, args.correo, {
       quitar: args.quitar,
       cuenta: args.cuenta,
+      owner: args.owner,
       env,
     });
     console.log(`superadmin ${args.correo}: ${r.accion}`);

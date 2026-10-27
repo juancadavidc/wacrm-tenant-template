@@ -58,12 +58,21 @@ function falso(opciones: {
           select: (cols: string) =>
             cols === 'id'
               ? {
-                  eq: (_c: string, v: string) => ({
-                    maybeSingle: async () => ({
-                      data: cuentas.find((c) => c.id === v) ?? null,
-                      error: null,
-                    }),
-                  }),
+                  eq: (col: string, v: string) =>
+                    Object.assign(
+                      Promise.resolve({
+                        data: cuentas.filter(
+                          (c) => (c as Record<string, string>)[col] === v
+                        ),
+                        error: null,
+                      }),
+                      {
+                        maybeSingle: async () => ({
+                          data: cuentas.find((c) => c.id === v) ?? null,
+                          error: null,
+                        }),
+                      }
+                    ),
                 }
               : Promise.resolve({ data: cuentas, error: null }),
         };
@@ -127,30 +136,78 @@ describe('darSuperadmin', () => {
     expect(f.updateUserById).not.toHaveBeenCalled();
   });
 
-  it('se niega a marcar a un miembro de una cuenta con otros usuarios', async () => {
+  it('marca a un miembro de la cuenta de la empresa (el superadmin puede ser admin)', async () => {
     const f = falso({
       usuarios: [{ id: 'AD', email: 'ad@x.co' }],
       perfiles: [
-        { user_id: 'AD', account_id: PERSONAL },
-        { user_id: 'OW', account_id: PERSONAL },
+        { user_id: 'AD', account_id: EMPRESA },
+        { user_id: 'OW', account_id: EMPRESA },
       ],
     });
-    await expect(darSuperadmin(f.cliente, 'ad@x.co', { cuenta: EMPRESA })).rejects.toThrow(
-      /otros usuarios/
-    );
-    expect(f.updateUserById).not.toHaveBeenCalled();
+    const r = await darSuperadmin(f.cliente, 'ad@x.co', { cuenta: EMPRESA });
+    expect(r.accion).toBe('marcado');
+    expect(f.updateUserById).toHaveBeenCalledWith('AD', {
+      app_metadata: { [MARCA]: true },
+    });
   });
 
-  it('se niega a marcar al owner que es el único miembro de la cuenta de la empresa', async () => {
+  it('marca al owner de la empresa', async () => {
     const f = falso({
       usuarios: [{ id: 'OW', email: 'ow@x.co' }],
       cuentas: [{ id: EMPRESA, owner_user_id: 'OW' }],
       perfiles: [{ user_id: 'OW', account_id: EMPRESA }],
     });
+    const r = await darSuperadmin(f.cliente, 'ow@x.co', { cuenta: EMPRESA });
+    expect(r.accion).toBe('marcado');
+  });
+
+  it('--owner toma la cuenta que posee ese correo', async () => {
+    const f = falso({
+      usuarios: [{ id: 'OW', email: 'ow@x.co' }],
+      cuentas: [
+        { id: EMPRESA, owner_user_id: 'OW' },
+        { id: PERSONAL, owner_user_id: 'X' },
+      ],
+    });
+    const r = await darSuperadmin(f.cliente, 'j@x.co', { owner: 'OW@x.co' });
+    expect(r.cuentaEmpresaId).toBe(EMPRESA);
+  });
+
+  it('--owner falla si el correo no existe, no posee cuentas o posee varias', async () => {
+    const sinUsuario = falso({});
     await expect(
-      darSuperadmin(f.cliente, 'ow@x.co', { cuenta: EMPRESA })
-    ).rejects.toThrow(/cuenta de la empresa/);
-    expect(f.updateUserById).not.toHaveBeenCalled();
+      darSuperadmin(sinUsuario.cliente, 'j@x.co', { owner: 'ow@x.co' })
+    ).rejects.toThrow(/no existe el usuario/);
+    const sinCuentas = falso({
+      usuarios: [{ id: 'OW', email: 'ow@x.co' }],
+      cuentas: [{ id: EMPRESA, owner_user_id: 'X' }],
+    });
+    await expect(
+      darSuperadmin(sinCuentas.cliente, 'j@x.co', { owner: 'ow@x.co' })
+    ).rejects.toThrow(/no es owner de ninguna cuenta/);
+    const varias = falso({
+      usuarios: [{ id: 'OW', email: 'ow@x.co' }],
+      cuentas: [
+        { id: EMPRESA, owner_user_id: 'OW' },
+        { id: PERSONAL, owner_user_id: 'OW' },
+      ],
+    });
+    await expect(
+      darSuperadmin(varias.cliente, 'j@x.co', { owner: 'ow@x.co' })
+    ).rejects.toThrow(/--cuenta/);
+    expect(varias.createUser).not.toHaveBeenCalled();
+  });
+
+  it('--cuenta gana sobre --owner', async () => {
+    const f = falso({
+      usuarios: [{ id: 'OW', email: 'ow@x.co' }],
+      cuentas: [{ id: EMPRESA, owner_user_id: 'OW' }],
+    });
+    const r = await darSuperadmin(f.cliente, 'j@x.co', {
+      cuenta: EMPRESA,
+      owner: 'nadie@x.co',
+    });
+    expect(r.cuentaEmpresaId).toBe(EMPRESA);
   });
 
   it('sin --cuenta ni EMPRESA_ACCOUNT_ID falla, aunque haya una sola candidata', async () => {
@@ -233,6 +290,14 @@ describe('main', () => {
   it('sin --correo sale con 1', async () => {
     const err = vi.spyOn(console, 'error').mockImplementation(() => {});
     expect(await main([])).toBe(1);
+    err.mockRestore();
+  });
+
+  it('--cuenta y --owner juntos salen con 1', async () => {
+    const err = vi.spyOn(console, 'error').mockImplementation(() => {});
+    expect(
+      await main(['--correo', 'j@x.co', '--cuenta', EMPRESA, '--owner', 'o@x.co'])
+    ).toBe(1);
     err.mockRestore();
   });
 
