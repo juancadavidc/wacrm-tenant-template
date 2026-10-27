@@ -1667,7 +1667,12 @@
       "removeDialogDesc": "¿Quitar a <bold>{name}</bold> de la cuenta? Se cerrará su sesión en esta cuenta y recibirá una cuenta personal nueva en su próximo inicio de sesión. Su acceso no se elimina.",
       "cancel": "Cancelar",
       "removing": "Quitando...",
-      "removeBtn": "Quitar miembro"
+      "removeBtn": "Quitar miembro",
+      "profileLabel": "Perfil",
+      "noProfile": "Sin perfil",
+      "updateProfileFailed": "Error al actualizar el perfil",
+      "profileUpdatedToast": "{name} ahora tiene el perfil {profile}",
+      "profileRemovedToast": "{name} quedó sin perfil"
     },
     "invite": {
       "inviteCreated": "Invitación creada",
@@ -1858,7 +1863,9 @@
       "viewer": "Observador",
       "viewerHint": "Solo lectura en toda la app",
       "owner": "Propietario",
-      "ownerHint": "Control total de la cuenta y la facturación"
+      "ownerHint": "Control total de la cuenta y la facturación",
+      "usuario": "Usuario",
+      "usuarioHint": "Ve solo las secciones de su perfil"
     },
     "whatsapp": {
       "title": "Conexión con WhatsApp",
@@ -1977,6 +1984,7 @@
       "deals": "Negocios y moneda",
       "inbox": "Bandeja de entrada",
       "members": "Miembros del equipo",
+      "profiles": "Perfiles de acceso",
       "api": "Claves de API"
     },
     "groups": {
@@ -2235,6 +2243,28 @@
       "textPlaceholder": "El texto del mensaje que se insertará",
       "cancel": "Cancelar",
       "save": "Guardar"
+    },
+    "profiles": {
+      "title": "Perfiles de acceso",
+      "description": "Un perfil agrupa las secciones que ve un usuario. Al cambiarlo, el cambio llega a todos sus usuarios al recargar.",
+      "nuevo": "Nuevo perfil",
+      "editar": "Editar",
+      "nombre": "Nombre",
+      "nombrePlaceholder": "Ej. Ventas",
+      "secciones": "Secciones",
+      "nota": "Las secciones que tu empresa no tiene contratadas no se dan, aunque el perfil las incluya.",
+      "deFabrica": "De fábrica",
+      "usuarios": "{count, plural, one {# usuario} other {# usuarios}}",
+      "aplicado": "Se aplica a {count, plural, one {# usuario} other {# usuarios}} al recargar",
+      "guardado": "Perfil guardado",
+      "guardar": "Guardar",
+      "guardando": "Guardando…",
+      "cancelar": "Cancelar",
+      "sinSecciones": "Sin secciones",
+      "vacio": "Aún no hay perfiles",
+      "loadFailed": "Error al cargar los perfiles",
+      "saveFailed": "Error al guardar el perfil",
+      "networkError": "Error de red"
     }
   },
   "SignupPage": {

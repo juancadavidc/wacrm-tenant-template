@@ -1667,7 +1667,12 @@
       "removeDialogDesc": "Remover <bold>{name}</bold> da conta? A pessoa será desconectada desta conta e receberá uma nova conta pessoal no próximo login. O login dela não é excluído.",
       "cancel": "Cancelar",
       "removing": "Removendo...",
-      "removeBtn": "Remover membro"
+      "removeBtn": "Remover membro",
+      "profileLabel": "Perfil",
+      "noProfile": "Sem perfil",
+      "updateProfileFailed": "Falha ao atualizar o perfil",
+      "profileUpdatedToast": "{name} agora tem o perfil {profile}",
+      "profileRemovedToast": "{name} ficou sem perfil"
     },
     "invite": {
       "inviteCreated": "Convite criado",
@@ -1858,7 +1863,9 @@
       "viewer": "Visualizador",
       "viewerHint": "Somente leitura em todo o app",
       "owner": "Proprietário",
-      "ownerHint": "Controle total da conta e do faturamento"
+      "ownerHint": "Controle total da conta e do faturamento",
+      "usuario": "Usuário",
+      "usuarioHint": "Vê apenas as seções do seu perfil"
     },
     "whatsapp": {
       "title": "Conexão com o WhatsApp",
@@ -1977,6 +1984,7 @@
       "deals": "Negócios e moeda",
       "inbox": "Caixa de entrada",
       "members": "Membros da equipe",
+      "profiles": "Perfis de acesso",
       "api": "Chaves de API"
     },
     "groups": {
@@ -2235,6 +2243,28 @@
       "textPlaceholder": "O texto da mensagem a inserir",
       "cancel": "Cancelar",
       "save": "Salvar"
+    },
+    "profiles": {
+      "title": "Perfis de acesso",
+      "description": "Um perfil agrupa as seções que um usuário vê. A mudança chega a todos os seus usuários ao recarregar.",
+      "nuevo": "Novo perfil",
+      "editar": "Editar",
+      "nombre": "Nome",
+      "nombrePlaceholder": "Ex. Vendas",
+      "secciones": "Seções",
+      "nota": "As seções que sua empresa não contratou não são concedidas, mesmo que o perfil as inclua.",
+      "deFabrica": "De fábrica",
+      "usuarios": "{count, plural, one {# usuário} other {# usuários}}",
+      "aplicado": "Aplica-se a {count, plural, one {# usuário} other {# usuários}} ao recarregar",
+      "guardado": "Perfil salvo",
+      "guardar": "Salvar",
+      "guardando": "Salvando…",
+      "cancelar": "Cancelar",
+      "sinSecciones": "Sem seções",
+      "vacio": "Ainda não há perfis",
+      "loadFailed": "Falha ao carregar os perfis",
+      "saveFailed": "Falha ao salvar o perfil",
+      "networkError": "Erro de rede"
     }
   },
   "SignupPage": {
