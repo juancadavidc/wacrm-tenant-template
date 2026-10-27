@@ -52,11 +52,52 @@ export async function GET() {
 
     const canSeeEmails = canManageMembers(ctx.role);
 
+    // Perfil de cada miembro (USR.2): solo para admin+ (decisión 12).
+    const perfilDe = new Map<string, { id: string; nombre: string }>();
+    if (canSeeEmails) {
+      const [asignados, perfiles] = await Promise.all([
+        ctx.supabase
+          .from("permisos_perfil_usuario")
+          .select("user_id, perfil_id")
+          .eq("account_id", ctx.accountId),
+        ctx.supabase
+          .from("permisos_perfiles")
+          .select("id, nombre")
+          .eq("account_id", ctx.accountId),
+      ]);
+      if (asignados.error || perfiles.error) {
+        console.error(
+          "[GET /api/account/members] profiles error:",
+          asignados.error ?? perfiles.error,
+        );
+        return NextResponse.json(
+          { error: t('account.members.loadFailed') },
+          { status: 500 },
+        );
+      }
+      const nombres = new Map(
+        ((perfiles.data ?? []) as { id: string; nombre: string }[]).map(
+          (p) => [p.id, p],
+        ),
+      );
+      for (const a of (asignados.data ?? []) as {
+        user_id: string;
+        perfil_id: string;
+      }[]) {
+        const perfil = nombres.get(a.perfil_id);
+        if (perfil) perfilDe.set(a.user_id, { id: perfil.id, nombre: perfil.nombre });
+      }
+    }
+
     const members: AccountMember[] = (data as ProfileRow[]).flatMap((row) => {
       // Defensive: the DB enum should never let an unknown role
       // through, but if a migration ever broadens the enum without
       // updating TS, skip the row rather than crash the page.
       if (!isAccountRole(row.account_role)) return [];
+      // owner y admin no llevan perfil (R17): una fila vieja de cuando
+      // eran usuarios no se muestra.
+      const llevaPerfil =
+        row.account_role === "agent" || row.account_role === "viewer";
       return [
         {
           user_id: row.user_id,
@@ -65,6 +106,9 @@ export async function GET() {
           avatar_url: row.avatar_url,
           role: row.account_role,
           joined_at: row.created_at,
+          ...(canSeeEmails
+            ? { perfil: (llevaPerfil && perfilDe.get(row.user_id)) || null }
+            : {}),
         },
       ];
     });

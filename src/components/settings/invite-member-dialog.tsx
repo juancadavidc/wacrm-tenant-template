@@ -38,8 +38,9 @@ import {
 } from '@/components/ui/select';
 import { useTranslations } from 'next-intl';
 import { useAuth } from '@/hooks/use-auth';
+import { opcionesDeRol } from '@/lib/permisos/perfiles-ui';
 
-type InviteRole = 'admin' | 'agent' | 'viewer';
+type InviteRole = 'usuario' | 'admin';
 
 interface InviteMemberDialogProps {
   open: boolean;
@@ -76,15 +77,17 @@ export function InviteMemberDialog({
 }: InviteMemberDialogProps) {
   const t = useTranslations('Settings.invite');
   const tRoles = useTranslations('Settings.roles');
-  const { account } = useAuth();
-  const [role, setRole] = useState<InviteRole>('agent');
+  const { account, accountRole } = useAuth();
+  // admin solo lo ofrece el owner (R21); sin rol aún, solo usuario.
+  const opciones = accountRole ? opcionesDeRol(accountRole) : [];
+  const [role, setRole] = useState<InviteRole>('usuario');
   const [expiry, setExpiry] = useState<string>('7');
   const [label, setLabel] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState<CreatedInvite | null>(null);
 
   function reset() {
-    setRole('agent');
+    setRole('usuario');
     setExpiry('7');
     setLabel('');
     setResult(null);
@@ -277,13 +280,15 @@ export function InviteMemberDialog({
                     <SelectValue>{tRoles(role)}</SelectValue>
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="admin">{tRoles('admin')}</SelectItem>
-                    <SelectItem value="agent">{tRoles('agent')}</SelectItem>
-                    <SelectItem value="viewer">{tRoles('viewer')}</SelectItem>
+                    {opciones.map((r) => (
+                      <SelectItem key={r} value={r}>
+                        {tRoles(r)}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
                 <p className="text-xs text-muted-foreground">
-                  {tRoles(`${role}Hint` as 'adminHint' | 'agentHint' | 'viewerHint')}
+                  {tRoles(`${role}Hint` as 'usuarioHint' | 'adminHint')}
                 </p>
               </div>
 

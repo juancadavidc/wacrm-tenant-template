@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const rpc = vi.fn();
 const requireRole = vi.fn();
+const getCurrentAccount = vi.fn();
 const listar = vi.fn();
 
 vi.mock('@/lib/auth/account', async () => {
@@ -12,7 +13,7 @@ vi.mock('@/lib/auth/account', async () => {
     await vi.importActual<typeof import('@/lib/auth/account')>(
       '@/lib/auth/account'
     );
-  return { ...real, requireRole };
+  return { ...real, requireRole, getCurrentAccount };
 });
 vi.mock('./perfiles', async () => {
   const real = await vi.importActual<typeof import('./perfiles')>('./perfiles');
@@ -24,6 +25,9 @@ const { PATCH } = await import('@/app/api/account/members/profiles/[id]/route');
 const { PUT } =
   await import('@/app/api/account/members/[userId]/profile/route');
 const { POST: INVITAR } = await import('@/app/api/account/invitations/route');
+const { GET: MIEMBROS } = await import('@/app/api/account/members/route');
+const { PATCH: CAMBIAR_ROL } =
+  await import('@/app/api/account/members/[userId]/route');
 const { ForbiddenError } = await import('@/lib/auth/account');
 
 const UUID = '00000000-0000-4000-8000-0000000000a1';
@@ -173,5 +177,77 @@ describe('rutas de perfiles', () => {
       expect(texto).not.toContain('isAccountRole(');
       expect(texto).not.toContain('set_member_role');
     }
+  });
+
+  it('PATCH de miembro con role agent responde 400 y no llama set_member_role', async () => {
+    requireRole.mockResolvedValue({
+      supabase: { rpc },
+      userId: 'u-owner',
+      accountId: 'c1',
+      role: 'owner',
+    });
+    for (const role of ['agent', 'viewer']) {
+      const res = await CAMBIAR_ROL(peticion('PATCH', { role }), {
+        params: Promise.resolve({ userId: UUID }),
+      });
+      expect(res.status).toBe(400);
+    }
+    expect(rpc).not.toHaveBeenCalled();
+  });
+
+  it('PATCH con usuario llama set_member_role con agent', async () => {
+    rpc.mockResolvedValue({ error: null });
+    requireRole.mockResolvedValue({
+      supabase: { rpc },
+      userId: 'u-owner',
+      accountId: 'c1',
+      role: 'owner',
+    });
+    const res = await CAMBIAR_ROL(peticion('PATCH', { role: 'usuario' }), {
+      params: Promise.resolve({ userId: UUID }),
+    });
+    expect(res.status).toBe(200);
+    expect(rpc).toHaveBeenCalledWith('set_member_role', {
+      p_user_id: UUID,
+      p_new_role: 'agent',
+    });
+  });
+
+  it('GET de miembros trae el perfil solo para admin+', async () => {
+    const tablas: Record<string, unknown[]> = {
+      profiles: [
+        { user_id: 'u1', full_name: 'Ana', email: 'a@x.co', avatar_url: null, account_role: 'agent', created_at: 'x' },
+        { user_id: 'u2', full_name: 'Beto', email: 'b@x.co', avatar_url: null, account_role: 'admin', created_at: 'x' },
+      ],
+      permisos_perfil_usuario: [
+        { user_id: 'u1', perfil_id: 'p1' },
+        { user_id: 'u2', perfil_id: 'p1' },
+      ],
+      permisos_perfiles: [{ id: 'p1', nombre: 'Asesor' }],
+    };
+    const from = (tabla: string) => {
+      const q: Record<string, unknown> = {};
+      q.select = () => q;
+      q.eq = () => q;
+      q.order = () => q;
+      q.then = (f: (v: unknown) => unknown) =>
+        Promise.resolve({ data: tablas[tabla], error: null }).then(f);
+      return q;
+    };
+    const ctx = (role: string) => ({
+      supabase: { from },
+      userId: 'u0',
+      accountId: 'c1',
+      role,
+    });
+
+    getCurrentAccount.mockResolvedValue(ctx('admin'));
+    const admin = (await (await MIEMBROS()).json()).members;
+    expect(admin[0].perfil).toEqual({ id: 'p1', nombre: 'Asesor' });
+    expect(admin[1].perfil).toBeNull();
+
+    getCurrentAccount.mockResolvedValue(ctx('agent'));
+    const agente = (await (await MIEMBROS()).json()).members;
+    expect(agente[0]).not.toHaveProperty('perfil');
   });
 });

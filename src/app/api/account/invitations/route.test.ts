@@ -41,12 +41,12 @@ describe('POST /api/account/invitations (R19)', () => {
     expect(insert).not.toHaveBeenCalled();
   });
 
-  it('control: role agent sí llega al insert', async () => {
+  it('control: role usuario sí llega al insert', async () => {
     single.mockResolvedValue({
       data: { id: 'i1', role: 'agent' },
       error: null,
     });
-    const res = await call({ role: 'agent' });
+    const res = await call({ role: 'usuario' });
     expect(res.status).toBe(201);
     expect(insert).toHaveBeenCalledTimes(1);
   });

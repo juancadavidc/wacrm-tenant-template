@@ -75,6 +75,8 @@ export interface AccountMember {
   avatar_url: string | null;
   role: AccountRole;
   joined_at: string;
+  /** Perfil de USR.2; solo lo recibe admin+ (decisión 12). */
+  perfil?: { id: string; nombre: string } | null;
 }
 
 /**

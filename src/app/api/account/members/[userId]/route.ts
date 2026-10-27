@@ -18,7 +18,7 @@ import { NextResponse } from "next/server";
 import type { PostgrestError } from "@supabase/supabase-js";
 
 import { requireRole, toErrorResponse } from "@/lib/auth/account";
-import { isAccountRole } from "@/lib/auth/roles";
+import { rolDeInvitacion } from "@/lib/permisos/roles";
 import {
   checkRateLimit,
   rateLimitResponse,
@@ -63,23 +63,23 @@ export async function PATCH(
     const body = (await request.json().catch(() => null)) as
       | { role?: unknown }
       | null;
-    const role = body?.role;
-
-    if (!isAccountRole(role)) {
-      return NextResponse.json(
-        { error: t('account.members.roleInvalid') },
-        { status: 400 },
-      );
-    }
-
     // The RPC blocks promotion to / demotion from owner, but
     // surface the friendlier 400 before crossing the wire too.
-    if (role === "owner") {
+    if (body?.role === "owner") {
       return NextResponse.json(
         {
           error:
             t('account.members.useTransferOwnership'),
         },
+        { status: 400 },
+      );
+    }
+
+    // Solo `usuario` (→ agent) y `admin`; agent/viewer ya no se aceptan.
+    const role = rolDeInvitacion(body?.role);
+    if (!role) {
+      return NextResponse.json(
+        { error: t('account.members.roleInvalid') },
         { status: 400 },
       );
     }

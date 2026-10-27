@@ -1667,7 +1667,12 @@
       "removeDialogDesc": "Remove <bold>{name}</bold> from the account? They'll be signed out of this account and given a fresh personal account on their next sign-in. Their login isn't deleted.",
       "cancel": "Cancel",
       "removing": "Removing...",
-      "removeBtn": "Remove member"
+      "removeBtn": "Remove member",
+      "profileLabel": "Profile",
+      "noProfile": "No profile",
+      "updateProfileFailed": "Failed to update the profile",
+      "profileUpdatedToast": "{name} now has the {profile} profile",
+      "profileRemovedToast": "{name} no longer has a profile"
     },
     "invite": {
       "inviteCreated": "Invite created",
@@ -1858,7 +1863,9 @@
       "viewer": "Viewer",
       "viewerHint": "Read-only across the app",
       "owner": "Owner",
-      "ownerHint": "Full control over account and billing"
+      "ownerHint": "Full control over account and billing",
+      "usuario": "User",
+      "usuarioHint": "Sees only the sections of their profile"
     },
     "whatsapp": {
       "title": "WhatsApp connection",
@@ -1977,6 +1984,7 @@
       "deals": "Deals & currency",
       "inbox": "Inbox",
       "members": "Team members",
+      "profiles": "Access profiles",
       "api": "API keys"
     },
     "groups": {
@@ -2235,6 +2243,28 @@
       "textPlaceholder": "The message text to insert",
       "cancel": "Cancel",
       "save": "Save"
+    },
+    "profiles": {
+      "title": "Access profiles",
+      "description": "A profile groups the sections a user sees. A change reaches all its users on reload.",
+      "nuevo": "New profile",
+      "editar": "Edit",
+      "nombre": "Name",
+      "nombrePlaceholder": "E.g. Sales",
+      "secciones": "Sections",
+      "nota": "Sections your company has not contracted are not granted, even if the profile includes them.",
+      "deFabrica": "Built-in",
+      "usuarios": "{count, plural, one {# user} other {# users}}",
+      "aplicado": "Applies to {count, plural, one {# user} other {# users}} on reload",
+      "guardado": "Profile saved",
+      "guardar": "Save",
+      "guardando": "Saving…",
+      "cancelar": "Cancel",
+      "sinSecciones": "No sections",
+      "vacio": "No profiles yet",
+      "loadFailed": "Failed to load profiles",
+      "saveFailed": "Failed to save the profile",
+      "networkError": "Network error"
     }
   },
   "SignupPage": {

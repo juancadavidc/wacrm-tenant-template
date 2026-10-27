@@ -67,6 +67,13 @@ import { RequireRole } from '@/components/auth/require-role';
 import { useAuth } from '@/hooks/use-auth';
 import { usePresence } from '@/hooks/use-presence';
 import type { AccountRole } from '@/lib/auth/roles';
+import { rolDeCuenta, rolDeInvitacion } from '@/lib/permisos/roles';
+import {
+  opcionesDeRol,
+  puedeAsignarPerfil,
+  puedeEditarRol,
+} from '@/lib/permisos/perfiles-ui';
+import type { PerfilListado } from '@/lib/permisos/perfiles';
 import { presenceLabel, summarize } from '@/lib/presence';
 import {
   PRESENCE_DOT_CLASS,
@@ -83,6 +90,7 @@ interface Member {
   avatar_url: string | null;
   role: AccountRole;
   joined_at: string;
+  perfil?: { id: string; nombre: string } | null;
 }
 
 interface Invitation {
@@ -93,12 +101,9 @@ interface Invitation {
   expires_at: string;
 }
 
-// These roles are translated via `useTranslations("Settings.roles")` where they are used.
-const EDITABLE_ROLES: { value: AccountRole }[] = [
-  { value: 'admin' },
-  { value: 'agent' },
-  { value: 'viewer' },
-];
+// Los roles editables salen de `opcionesDeRol(miRol)` (USR.2): usuario y admin.
+// "Sin perfil" en el selector de perfil.
+const SIN_PERFIL = '__sin_perfil__';
 
 // Per-role chip metadata (icon / label / colour) lives in the shared
 // ROLE_META module so this roster and the Overview identity chip can't
@@ -127,11 +132,13 @@ function fmtExpiresIn(iso: string, t: (key: string, values?: Record<string, stri
 export function MembersTab() {
   const t = useTranslations('Settings.members');
   const tRoles = useTranslations('Settings.roles');
-  const { user, canManageMembers } = useAuth();
+  const { user, canManageMembers, accountRole } = useAuth();
+  const miRol: AccountRole = accountRole ?? 'viewer';
   const { getPresence, getRow, now } = usePresence();
 
   const [members, setMembers] = useState<Member[]>([]);
   const [invitations, setInvitations] = useState<Invitation[]>([]);
+  const [perfiles, setPerfiles] = useState<PerfilListado[]>([]);
   const [loading, setLoading] = useState(true);
 
   const [inviteOpen, setInviteOpen] = useState(false);
@@ -142,12 +149,19 @@ export function MembersTab() {
 
   const loadEverything = useCallback(async () => {
     try {
-      const [mres, ires] = await Promise.all([
+      const [mres, ires, pres] = await Promise.all([
         fetch('/api/account/members', { cache: 'no-store' }),
         canManageMembers
           ? fetch('/api/account/invitations', { cache: 'no-store' })
           : Promise.resolve(null),
+        canManageMembers
+          ? fetch('/api/account/members/profiles', { cache: 'no-store' })
+          : Promise.resolve(null),
       ]);
+      if (pres?.ok) {
+        const pdata = (await pres.json()) as { perfiles: PerfilListado[] };
+        setPerfiles(pdata.perfiles);
+      }
 
       if (!mres.ok) {
         const payload = await mres.json().catch(() => ({}));
@@ -180,8 +194,12 @@ export function MembersTab() {
     void loadEverything();
   }, [loadEverything]);
 
-  async function handleRoleChange(member: Member, nextRole: AccountRole) {
-    if (member.role === nextRole) return;
+  async function handleRoleChange(
+    member: Member,
+    next: 'usuario' | 'admin',
+  ) {
+    const nextRole = rolDeInvitacion(next);
+    if (!nextRole || rolDeCuenta(member.role) === next) return;
     // Optimistic update — flip the dropdown immediately so the UI
     // feels snappy. If the server PATCH fails we revert below so
     // the dropdown doesn't lie about the persisted state.
@@ -196,7 +214,7 @@ export function MembersTab() {
       const res = await fetch(`/api/account/members/${member.user_id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ role: nextRole }),
+        body: JSON.stringify({ role: next }),
       });
       if (!res.ok) {
         // Revert the optimistic flip. The toast on its own wasn't
@@ -213,7 +231,7 @@ export function MembersTab() {
         toast.error(payload.error || t('updateRoleFailed'));
         return;
       }
-      toast.success(t('updatedToast', { name: member.full_name || t('unnamed'), role: tRoles(nextRole) }));
+      toast.success(t('updatedToast', { name: member.full_name || t('unnamed'), role: tRoles(next) }));
     } catch (err) {
       // Same revert on network failure.
       setMembers((prev) =>
@@ -222,6 +240,46 @@ export function MembersTab() {
         ),
       );
       console.error('[MembersTab] role change error:', err);
+      toast.error(t('networkError'));
+    } finally {
+      setPendingMemberAction(null);
+    }
+  }
+
+  async function handleProfileChange(member: Member, valor: string) {
+    const perfilId = valor === SIN_PERFIL ? null : valor;
+    if ((member.perfil?.id ?? null) === perfilId) return;
+    const previo = member.perfil ?? null;
+    const nuevo = perfilId
+      ? perfiles.find((p) => p.id === perfilId)
+      : undefined;
+    const aplicar = (perfil: Member['perfil']) =>
+      setMembers((prev) =>
+        prev.map((m) => (m.user_id === member.user_id ? { ...m, perfil } : m)),
+      );
+    setPendingMemberAction(member.user_id);
+    aplicar(nuevo ? { id: nuevo.id, nombre: nuevo.nombre } : null);
+    try {
+      const res = await fetch(`/api/account/members/${member.user_id}/profile`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ perfilId }),
+      });
+      if (!res.ok) {
+        aplicar(previo);
+        const payload = await res.json().catch(() => ({}));
+        toast.error(payload.error || t('updateProfileFailed'));
+        return;
+      }
+      const name = member.full_name || t('unnamed');
+      toast.success(
+        nuevo
+          ? t('profileUpdatedToast', { name, profile: nuevo.nombre })
+          : t('profileRemovedToast', { name }),
+      );
+    } catch (err) {
+      aplicar(previo);
+      console.error('[MembersTab] profile change error:', err);
       toast.error(t('networkError'));
     } finally {
       setPendingMemberAction(null);
@@ -413,27 +471,29 @@ export function MembersTab() {
                     {/* Role display / editor. Inline Select is admin+
                         only AND not allowed on the owner row (owner
                         changes go through transfer, which lands later). */}
-                    {canManageMembers && !isOwnerRow && !isSelf ? (
+                    {puedeEditarRol(miRol, member.role, isSelf) ? (
                       <Select
-                        value={member.role}
+                        value={rolDeCuenta(member.role)}
                         onValueChange={(v) =>
                           // Base UI Select can emit null on clear. We
                           // don't expose a clear affordance, so the
                           // guard is defensive — but the typed
                           // signature requires it.
-                          v && handleRoleChange(member, v as AccountRole)
+                          v && handleRoleChange(member, v as 'usuario' | 'admin')
                         }
                       >
                         <SelectTrigger
                           className="w-32 bg-muted border-border text-foreground"
                           disabled={isBusy}
                         >
-                          <SelectValue>{tRoles(member.role)}</SelectValue>
+                          <SelectValue>
+                            {tRoles(rolDeCuenta(member.role))}
+                          </SelectValue>
                         </SelectTrigger>
                         <SelectContent>
-                          {EDITABLE_ROLES.map((r) => (
-                            <SelectItem key={r.value} value={r.value}>
-                              {tRoles(r.value)}
+                          {opcionesDeRol(miRol).map((r) => (
+                            <SelectItem key={r} value={r}>
+                              {tRoles(r)}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -443,9 +503,45 @@ export function MembersTab() {
                         className={`inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs font-medium ${roleMeta.className}`}
                       >
                         <RoleIcon className="size-3.5" />
-                        {tRoles(member.role)}
+                        {tRoles(rolDeCuenta(member.role))}
                       </span>
                     )}
+
+                    {/* Perfil (USR.2). Selector solo si R10/R17 lo
+                        permiten; si no, el nombre. owner y admin no
+                        llevan perfil: el servidor no lo manda y aquí
+                        tampoco se pinta. */}
+                    {puedeAsignarPerfil(miRol, member.role, isSelf) ? (
+                      <Select
+                        value={member.perfil?.id ?? SIN_PERFIL}
+                        onValueChange={(v) => v && handleProfileChange(member, v)}
+                      >
+                        <SelectTrigger
+                          aria-label={t('profileLabel')}
+                          className="w-36 bg-muted border-border text-foreground"
+                          disabled={isBusy}
+                        >
+                          <SelectValue>
+                            {member.perfil?.nombre ?? t('noProfile')}
+                          </SelectValue>
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value={SIN_PERFIL}>
+                            {t('noProfile')}
+                          </SelectItem>
+                          {perfiles.map((p) => (
+                            <SelectItem key={p.id} value={p.id}>
+                              {p.nombre}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    ) : rolDeCuenta(member.role) === 'usuario' &&
+                      member.perfil ? (
+                      <span className="text-xs text-muted-foreground">
+                        {member.perfil.nombre}
+                      </span>
+                    ) : null}
 
                     {/* Remove. Admin+ only; never on the owner row;
                         never on yourself. Pre-polish styling was
@@ -529,7 +625,7 @@ export function MembersTab() {
                             className={`inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-[11px] font-medium ${inviteRoleMeta.className}`}
                           >
                             <InviteRoleIcon className="size-3" />
-                            {tRoles(inv.role)}
+                            {tRoles(rolDeCuenta(inv.role))}
                           </span>
                         </div>
                         <p className="mt-0.5 text-xs text-muted-foreground">

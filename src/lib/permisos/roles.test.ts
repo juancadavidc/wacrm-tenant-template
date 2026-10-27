@@ -16,8 +16,8 @@ describe('rolDeInvitacion', () => {
   it.each([
     ['usuario', 'agent'],
     ['admin', 'admin'],
-    ['agent', 'agent'],
-    ['viewer', 'viewer'],
+    ['agent', null],
+    ['viewer', null],
     ['owner', null],
     ['superadmin', null],
     [undefined, null],
