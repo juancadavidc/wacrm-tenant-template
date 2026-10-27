@@ -149,6 +149,7 @@ export const CATALOGO_V1: Catalogo = Object.freeze(
       id: 'agents',
       nombre: 'Agentes de IA',
       ruta: '/agents',
+      // `/api/ai/config` (solo la raíz) es de cuenta/sesión: ver RUTAS_API_DE_CUENTA.
       prefijosApi: ['/api/ai'],
     },
     {
@@ -158,7 +159,7 @@ export const CATALOGO_V1: Catalogo = Object.freeze(
       prefijosApi: [
         '/api/whatsapp/config',
         '/api/whatsapp/templates',
-        '/api/account/members',
+        '/api/account/members', // la raíz exacta es de cuenta (RUTAS_API_DE_CUENTA)
         '/api/account/invitations',
         '/api/account/api-keys',
         '/api/v1/webhooks',
@@ -166,6 +167,20 @@ export const CATALOGO_V1: Catalogo = Object.freeze(
     },
   ])
 ) as Catalogo;
+
+/**
+ * Lecturas compartidas entre secciones: rutas exactas (sin subrutas) que no
+ * pertenecen a ninguna sección (R18). SRV.1 las pone en `RUTAS_API_LIBRES`.
+ * - `/api/account/members`: selector de miembros de Agentes y Automatizaciones.
+ * - `/api/ai/config`: estado de autorrespuesta que lee la Bandeja.
+ * Sus escrituras (`/api/account/members/<id>`, POST/DELETE de config) siguen
+ * protegidas por `requireRole('admin')`. El llamador pasa el pathname tal como
+ * lo enruta Next.
+ */
+export const RUTAS_API_DE_CUENTA: readonly string[] = Object.freeze([
+  '/api/account/members',
+  '/api/ai/config',
+]);
 
 function normalizar(pathname: string): string {
   let p = pathname.split('#')[0].split('?')[0];
@@ -188,6 +203,7 @@ export function seccionDeApi(
   pathname: string
 ): SeccionId | null {
   const p = normalizar(pathname);
+  if (RUTAS_API_DE_CUENTA.includes(p)) return null;
   return (
     catalogo.find((s) => s.prefijosApi.some((x) => contienePrefijo(x, p)))
       ?.id ?? null

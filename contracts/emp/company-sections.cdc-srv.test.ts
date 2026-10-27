@@ -28,7 +28,11 @@ describe('CDC SRV.1 contra el stub de I1', () => {
     const f = stubFuenteSecciones();
     f.apagar('agents');
     expect(await puedeEntrar(f, '/api/ai/draft', 'api')).toBe('apagada');
-    expect(await puedeEntrar(f, '/api/ai/config', 'api')).toBe('apagada');
+    // lectura compartida con la Bandeja: no depende de Agentes de IA
+    expect(await puedeEntrar(f, '/api/ai/config', 'api')).toBe('sin-seccion');
+    expect(await puedeEntrar(f, '/api/account/members', 'api')).toBe(
+      'sin-seccion'
+    );
   });
   it('con Agentes de IA apagada, la URL directa /agents es de una sección apagada', async () => {
     const f = stubFuenteSecciones();

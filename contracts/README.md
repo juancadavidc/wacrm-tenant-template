@@ -15,6 +15,8 @@ esquemas y helpers que los módulos publicadores exponen y los consumidores impo
 | I2 (PRD wacrm-permisos-granulares) — Permisos efectivos de usuario                 | `usr/effective-permissions.ts` | USR     | SRV      |
 | I1 (PRD wacrm-permisos-granulares) — Catálogo de secciones y secciones contratadas | `emp/company-sections.ts`      | EMP     | USR, SRV |
 
+I1 deja fuera de toda sección (`RUTAS_API_DE_CUENTA`) las lecturas compartidas `/api/account/members` y `/api/ai/config` (rutas exactas); SRV.1 las pone en `RUTAS_API_LIBRES`.
+
 El stub de I1 (`emp/company-sections.stub.ts`) no se genera: se escribe a mano sobre `CATALOGO_V1`.
 
 ## Cómo correr las CDC
