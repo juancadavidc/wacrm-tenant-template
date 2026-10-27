@@ -2789,7 +2789,13 @@
       "nameTooLong": "Account name must be {max} characters or fewer",
       "updateFailed": "Failed to update account",
       "transferFailed": "Failed to transfer ownership",
-      "newOwnerInvalid": "'newOwnerUserId' must be a valid UUID"
+      "newOwnerInvalid": "'newOwnerUserId' must be a valid UUID",
+      "profiles": {
+        "loadFailed": "Failed to load profiles",
+        "invalid": "Invalid profile: check the name and sections",
+        "nameTaken": "A profile with that name already exists",
+        "saveFailed": "Failed to save the profile"
+      }
     },
     "invitations": {
       "redeemFailed": "Failed to redeem invitation",

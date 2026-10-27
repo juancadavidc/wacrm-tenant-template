@@ -232,6 +232,10 @@ export async function POST(request: Request) {
       .select("id, role, label, expires_at, created_at")
       .single();
 
+    if (error?.code === "42501") {
+      // R21: solo el owner nombra admins (trigger en la base).
+      return NextResponse.json({ error: error.message }, { status: 403 });
+    }
     if (error || !data) {
       console.error("[POST /api/account/invitations] insert error:", error);
       return NextResponse.json(

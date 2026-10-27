@@ -39,4 +39,30 @@ BEGIN
       RAISE EXCEPTION 'service_role sin escritura en %', t;
     END IF;
   END LOOP;
+
+  -- permisos_003_gestion_perfiles.sql (USR.2): las RPC las llama authenticated,
+  -- anon no; los triggers de R21 existen.
+  IF NOT has_function_privilege('authenticated',
+       'public.permisos_guardar_perfil(uuid,text,text[])', 'EXECUTE')
+     OR NOT has_function_privilege('authenticated',
+       'public.permisos_asignar_perfil(uuid,uuid)', 'EXECUTE') THEN
+    RAISE EXCEPTION 'authenticated sin EXECUTE en las RPC de perfiles';
+  END IF;
+  IF has_function_privilege('anon',
+       'public.permisos_guardar_perfil(uuid,text,text[])', 'EXECUTE')
+     OR has_function_privilege('anon',
+       'public.permisos_asignar_perfil(uuid,uuid)', 'EXECUTE') THEN
+    RAISE EXCEPTION 'anon no debe ejecutar las RPC de perfiles';
+  END IF;
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_trigger
+    WHERE tgname = 'permisos_r21_rol'
+      AND tgrelid = 'public.profiles'::regclass
+  ) OR NOT EXISTS (
+    SELECT 1 FROM pg_trigger
+    WHERE tgname = 'permisos_r21_invitacion'
+      AND tgrelid = 'public.account_invitations'::regclass
+  ) THEN
+    RAISE EXCEPTION 'faltan los triggers de R21';
+  END IF;
 END $$;

@@ -2789,7 +2789,13 @@
       "nameTooLong": "O nome da conta deve ter no máximo {max} caracteres",
       "updateFailed": "Falha ao atualizar a conta",
       "transferFailed": "Falha ao transferir a propriedade",
-      "newOwnerInvalid": "newOwnerUserId deve ser um UUID válido"
+      "newOwnerInvalid": "newOwnerUserId deve ser um UUID válido",
+      "profiles": {
+        "loadFailed": "Erro ao carregar os perfis",
+        "invalid": "Perfil inválido: revise o nome e as seções",
+        "nameTaken": "Já existe um perfil com esse nome",
+        "saveFailed": "Erro ao salvar o perfil"
+      }
     },
     "invitations": {
       "redeemFailed": "Falha ao aceitar o convite",
