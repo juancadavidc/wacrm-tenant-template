@@ -2948,5 +2948,15 @@
     "texto": "The {nombre} section is not enabled for your company.",
     "textoGenerico": "This section is not enabled for your company.",
     "volver": "Back to dashboard"
+  },
+  "Superadmin": {
+    "titulo": "Contracted sections",
+    "descripcion": "Turn on or off what the company {cuenta} sees. The change applies instantly.",
+    "prendida": "On",
+    "apagada": "Off",
+    "errorCambiar": "The section could not be changed. Try again.",
+    "sinAccesoTitulo": "No access",
+    "sinAccesoTexto": "This view is only for the installation superadmin.",
+    "cuentaEmpresa": "No company account is configured ({n} found). Check EMPRESA_ACCOUNT_ID in docs/superadmin.md."
   }
 }

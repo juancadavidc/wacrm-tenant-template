@@ -2948,5 +2948,15 @@
     "texto": "A seção {nombre} não está ativa para a sua empresa.",
     "textoGenerico": "Esta seção não está ativa para a sua empresa.",
     "volver": "Voltar ao painel"
+  },
+  "Superadmin": {
+    "titulo": "Seções contratadas",
+    "descripcion": "Ligue ou desligue o que a empresa {cuenta} vê. A mudança vale na hora.",
+    "prendida": "Ligada",
+    "apagada": "Desligada",
+    "errorCambiar": "Não foi possível alterar a seção. Tente novamente.",
+    "sinAccesoTitulo": "Sem acesso",
+    "sinAccesoTexto": "Esta tela é apenas para o superadmin da instalação.",
+    "cuentaEmpresa": "Não há conta de empresa configurada ({n} encontradas). Verifique EMPRESA_ACCOUNT_ID em docs/superadmin.md."
   }
 }

@@ -29,7 +29,7 @@ import {
 export const POLICIES_PATH = 'config/policies.yaml';
 
 /** KEY=VALUE por línea; ignora comentarios y vacías; la última definición gana. */
-function leerEnvArchivo(ruta) {
+export function leerEnvArchivo(ruta) {
   const env = {};
   if (!existsSync(ruta)) return env;
   for (const linea of readFileSync(ruta, 'utf8').split('\n')) {

@@ -2948,5 +2948,15 @@
     "texto": "La sección {nombre} no está activa para tu empresa.",
     "textoGenerico": "Esta sección no está activa para tu empresa.",
     "volver": "Volver al panel"
+  },
+  "Superadmin": {
+    "titulo": "Secciones contratadas",
+    "descripcion": "Prende o apaga lo que ve la empresa {cuenta}. El cambio se aplica al instante.",
+    "prendida": "Prendida",
+    "apagada": "Apagada",
+    "errorCambiar": "No se pudo cambiar la sección. Intenta de nuevo.",
+    "sinAccesoTitulo": "Sin acceso",
+    "sinAccesoTexto": "Esta vista es solo para el superadmin de la instalación.",
+    "cuentaEmpresa": "No hay una cuenta de empresa configurada ({n} encontradas). Revisa EMPRESA_ACCOUNT_ID en docs/superadmin.md."
   }
 }

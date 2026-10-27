@@ -2948,5 +2948,15 @@
     "texto": "{nombre} 섹션은 회사에서 활성화되어 있지 않습니다.",
     "textoGenerico": "이 섹션은 회사에서 활성화되어 있지 않습니다.",
     "volver": "대시보드로 돌아가기"
+  },
+  "Superadmin": {
+    "titulo": "Contracted sections",
+    "descripcion": "Turn on or off what the company {cuenta} sees. The change applies instantly.",
+    "prendida": "On",
+    "apagada": "Off",
+    "errorCambiar": "The section could not be changed. Try again.",
+    "sinAccesoTitulo": "No access",
+    "sinAccesoTexto": "This view is only for the installation superadmin.",
+    "cuentaEmpresa": "No company account is configured ({n} found). Check EMPRESA_ACCOUNT_ID in docs/superadmin.md."
   }
 }
