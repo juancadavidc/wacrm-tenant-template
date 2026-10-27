@@ -2789,7 +2789,13 @@
       "nameTooLong": "계정 이름은 {max}자 이하여야 합니다",
       "updateFailed": "계정을 업데이트하지 못했습니다",
       "transferFailed": "소유권을 이전하지 못했습니다",
-      "newOwnerInvalid": "newOwnerUserId는 유효한 UUID여야 합니다"
+      "newOwnerInvalid": "newOwnerUserId는 유효한 UUID여야 합니다",
+      "profiles": {
+        "loadFailed": "프로필을 불러오지 못했습니다",
+        "invalid": "잘못된 프로필입니다. 이름과 섹션을 확인하세요",
+        "nameTaken": "같은 이름의 프로필이 이미 있습니다",
+        "saveFailed": "프로필을 저장하지 못했습니다"
+      }
     },
     "invitations": {
       "redeemFailed": "초대를 수락하지 못했습니다",
