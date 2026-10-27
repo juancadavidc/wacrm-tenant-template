@@ -135,7 +135,7 @@ export async function middleware(request: NextRequest) {
   // Protected pages - redirect to login if not authenticated
   // Every top-level route under src/app/(dashboard)/ belongs here —
   // middleware.test.ts reads that directory and fails on a missing one.
-  const protectedPaths = ['/dashboard', '/inbox', '/contacts', '/pipelines', '/broadcasts', '/automations', '/flows', '/agents', '/notifications', '/settings']
+  const protectedPaths = ['/dashboard', '/inbox', '/contacts', '/pipelines', '/broadcasts', '/automations', '/flows', '/agents', '/notifications', '/settings', '/sin-acceso']
   if (!user && protectedPaths.some(path => request.nextUrl.pathname.startsWith(path))) {
     const url = request.nextUrl.clone()
     url.pathname = '/login'
@@ -164,6 +164,22 @@ export async function middleware(request: NextRequest) {
         return withRefreshedCookies(
           NextResponse.json({ error: 'Forbidden' }, { status: 403 })
         )
+      }
+    }
+  }
+
+  // Página de una sección apagada (o sin cuenta resoluble): se reescribe a
+  // "sin acceso" sin cambiar la URL. Sin sesión ya redirigió a /login arriba.
+  if (user && !pathname.startsWith('/api')) {
+    const clase = clasificarRuta(pathname, request.method)
+    if (clase.tipo === 'seccion' && !clase.esApi) {
+      const cuentaId = await cuentaDe(supabase as unknown as ClienteCuenta, user.id)
+      const decision = await decidirAcceso(pathname, cuentaId, undefined, request.method)
+      if (decision.tipo !== 'pasa') {
+        const url = request.nextUrl.clone()
+        url.pathname = '/sin-acceso'
+        url.search = `?seccion=${clase.seccion}`
+        return withRefreshedCookies(NextResponse.rewrite(url))
       }
     }
   }

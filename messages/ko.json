@@ -2936,5 +2936,11 @@
       "metaApiStatus": "Meta API 오류: {status}",
       "syncFailed": "템플릿을 동기화하지 못했습니다"
     }
+  },
+  "SinAccesoSeccion": {
+    "titulo": "접근 불가",
+    "texto": "{nombre} 섹션은 회사에서 활성화되어 있지 않습니다.",
+    "textoGenerico": "이 섹션은 회사에서 활성화되어 있지 않습니다.",
+    "volver": "대시보드로 돌아가기"
   }
 }

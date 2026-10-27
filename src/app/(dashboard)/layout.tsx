@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { connection } from "next/server";
 import { estadoVisibilidad } from "@/modulos/visibilidad/servidor";
 import { estadoAsignacion } from "@/modulos/asignacion/servidor";
+import { cargarSeccionesDelMenu } from "@/lib/secciones/menu";
 import { DashboardShell } from "./dashboard-shell";
 
 // Server layout whose only job is to declare "do not index" metadata
@@ -31,10 +32,12 @@ export default async function DashboardLayout({
   await connection();
   const { activo } = estadoVisibilidad();
   const asignacion = estadoAsignacion();
+  const secciones = await cargarSeccionesDelMenu();
   return (
     <DashboardShell
       visibilidadActiva={activo}
       asignacionActiva={asignacion.activo}
+      secciones={secciones}
     >
       {children}
     </DashboardShell>
