@@ -21,6 +21,9 @@ const tablesWithoutDomainData = new Set([
   "mod_asignacion_cursor",
   // ASG.2: reglas que carga el admin de la empresa, no datos de uso.
   "mod_asignacion_reglas",
+  // EMP.1: secciones que el trigger de cuentas nuevas prende por defecto; es
+  // configuración de la empresa, no datos de uso.
+  "permisos_secciones_cuenta",
 ]);
 
 function accountScopedTables(): Set<string> {

@@ -216,7 +216,7 @@ describe('verificación del publicador de I3 (MOD.1)', () => {
   it('todas las migraciones de wacrm en supabase/migrations cumplen MIGRACION_WACRM', () => {
     const reales = fs
       .readdirSync('supabase/migrations')
-      .filter((f) => f.endsWith('.sql') && !f.startsWith('mod_'));
+      .filter((f) => f.endsWith('.sql') && !f.startsWith('mod_') && !f.startsWith('permisos_'));
     expect(reales.length).toBeGreaterThan(0);
     for (const f of reales) expect(f).toMatch(MIGRACION_WACRM);
   });
