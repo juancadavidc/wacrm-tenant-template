@@ -11,7 +11,7 @@ export interface RutaApiLibre {
   ruta: string;
   /** true: solo la ruta exacta; false: la ruta y sus subrutas por segmento. */
   exacta: boolean;
-  motivo: 'cuenta-sesion' | 'sistema';
+  motivo: 'cuenta-sesion' | 'sistema' | 'superadmin';
   /**
    * Si está, la ruta solo es libre para GET/HEAD; cualquier otro método
    * se decide con esta sección (las escrituras no son lecturas compartidas).
@@ -49,6 +49,8 @@ export const RUTAS_API_LIBRES: readonly RutaApiLibre[] = [
     motivo: 'cuenta-sesion',
     seccionEscritura: 'agents',
   },
+  // superadmin: el handler exige la marca y responde 403 a los demás
+  { ruta: '/api/superadmin', exacta: false, motivo: 'superadmin' },
   // sistema: se autentican con firma o secreto
   { ruta: '/api/whatsapp/webhook', exacta: false, motivo: 'sistema' },
   { ruta: '/api/backup/cron', exacta: false, motivo: 'sistema' },
