@@ -10,3 +10,10 @@ export function esSuperadmin(
 ): boolean {
   return usuario?.app_metadata?.[MARCA_SUPERADMIN] === true;
 }
+
+/** Quién ve qué en la página /superadmin: sin I/O. Vive aquí (módulo de servidor, sin 'use client') porque la página de servidor la llama. */
+export function decidirPagina(
+  usuario: Parameters<typeof esSuperadmin>[0]
+): 'sin-acceso' | 'vista' {
+  return esSuperadmin(usuario) ? 'vista' : 'sin-acceso';
+}
