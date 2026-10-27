@@ -1,6 +1,7 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 import { supabaseAuthCookieName, supabaseServerUrl } from '@/lib/supabase/internal-url'
+import { clasificarRuta, decidirAcceso } from '@/lib/secciones/acceso'
 
 // SHA-256 hex con Web Crypto (el middleware corre en Edge, sin node:crypto).
 // Debe coincidir con hashInviteToken de src/lib/auth/invitations.ts.
@@ -17,6 +18,24 @@ async function isPendingInvitation(
     return (data as { ok?: boolean } | null)?.ok === true
   } catch {
     return false
+  }
+}
+
+// Cuenta del usuario con sesión; null si no tiene perfil o la consulta falla.
+async function cuentaDe(
+  supabase: { from: (t: string) => any },
+  userId: string,
+): Promise<string | null> {
+  try {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('account_id')
+      .eq('user_id', userId)
+      .maybeSingle()
+    if (error) return null
+    return (data as { account_id?: string | null } | null)?.account_id ?? null
+  } catch {
+    return null
   }
 }
 
@@ -119,6 +138,24 @@ export async function middleware(request: NextRequest) {
     return withRefreshedCookies(
       NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     )
+  }
+
+  // Secciones contratadas (SRV.1): /api de una sección apagada y /api sin
+  // sección del catálogo (salvo cuenta y sesión) responden 403. Sin sesión, una
+  // ruta de sección pasa: el handler responde 401 o requireApiKey decide.
+  const pathname = request.nextUrl.pathname
+  if (pathname === '/api' || pathname.startsWith('/api/')) {
+    const clase = clasificarRuta(pathname)
+    if (clase.tipo !== 'seccion' || user) {
+      const cuentaId =
+        clase.tipo === 'seccion' && user ? await cuentaDe(supabase, user.id) : null
+      const decision = await decidirAcceso(pathname, cuentaId)
+      if (decision.tipo !== 'pasa') {
+        return withRefreshedCookies(
+          NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+        )
+      }
+    }
   }
 
   return supabaseResponse
