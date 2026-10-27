@@ -53,8 +53,8 @@ en prueba real contra el fork.
 `contracts/usr/effective-permissions.publicador.test.ts` la cierra USR.1 (I2 de
 `wacrm-permisos-granulares`).
 
-`contracts/emp/company-sections.publicador.test.ts` la cierra EMP.1 (I1 de
-`wacrm-permisos-granulares`).
+`contracts/emp/company-sections.publicador.test.ts`: verificación cerrada por EMP.1 (I1 de
+`wacrm-permisos-granulares`; `src/lib/permisos/secciones.ts`, migración `permisos_001_secciones.sql`).
 
 ## Regla de estabilidad
 

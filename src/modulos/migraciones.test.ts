@@ -10,7 +10,11 @@ import {
   MIGRACION_WACRM,
   ordenMigraciones,
 } from '@contracts/mod/module';
-import { DIR_MIGRACIONES, verificarMigraciones } from './migraciones';
+import {
+  DIR_MIGRACIONES,
+  MIGRACION_PERMISOS,
+  verificarMigraciones,
+} from './migraciones';
 import { MODULOS } from './registro';
 
 const reales = fs
@@ -96,5 +100,33 @@ describe('migraciones de módulos (IT estática)', () => {
   it('la migración de prueba de CI tiene nombre de módulo', () => {
     expect(esMigracionDeModulo('mod_demo_001.sql', 'demo')).toBe(true);
     expect(fs.existsSync('supabase/ci/modulos/mod_demo_001.sql')).toBe(true);
+  });
+
+  it('acepta las migraciones del núcleo de permisos', () => {
+    expect(
+      verificarMigraciones(['001_a.sql', 'permisos_001_secciones.sql'], [])
+    ).toEqual([]);
+  });
+
+  it('rechaza un prefijo permisos_ mal formado', () => {
+    const p = verificarMigraciones(['permisos_1_x.sql'], []);
+    expect(p).toHaveLength(1);
+    expect(p[0].motivo).toMatch(/ni migración de wacrm ni de módulo/);
+  });
+
+  it('las de permisos van después de las de wacrm y de módulos', () => {
+    const todas = ordenMigraciones([...reales, 'mod_demo_001.sql']);
+    expect(todas.at(-1)).toBe('permisos_001_secciones.sql');
+    const primera = todas.findIndex((f) => MIGRACION_PERMISOS.test(f));
+    expect(todas.slice(primera).every((f) => MIGRACION_PERMISOS.test(f))).toBe(
+      true
+    );
+  });
+
+  it('ninguna migración de wacrm ni de módulo crea objetos permisos_', () => {
+    for (const f of reales.filter((f) => !MIGRACION_PERMISOS.test(f))) {
+      const sql = fs.readFileSync(path.join(DIR_MIGRACIONES, f), 'utf8');
+      expect(sql, f).not.toMatch(/\bpermisos_[a-z]/i);
+    }
   });
 });

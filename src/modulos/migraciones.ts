@@ -10,6 +10,9 @@ export interface ProblemaMigracion {
   motivo: string;
 }
 
+/** Núcleo de permisos (PRD wacrm-permisos-granulares): `permisos_NNN_<desc>.sql`. */
+export const MIGRACION_PERMISOS = /^permisos_\d{3}_[a-z0-9_]+\.sql$/;
+
 export const DIR_MIGRACIONES = path.join(process.cwd(), 'supabase/migrations');
 
 /**
@@ -24,6 +27,7 @@ export function verificarMigraciones(
   const registrados = new Set(modulos.map((m) => m.nombre));
   for (const archivo of archivos) {
     if (MIGRACION_WACRM.test(archivo)) continue;
+    if (MIGRACION_PERMISOS.test(archivo)) continue;
     const m = MIGRACION_MODULO.exec(archivo);
     if (!m) {
       problemas.push({

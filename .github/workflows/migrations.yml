@@ -84,9 +84,12 @@ jobs:
         run: |
           for f in $(ls supabase/migrations/*.sql | LC_ALL=C sort); do
             case "$(basename "$f")" in
-              mod_*) psql "postgresql://postgres:postgres@127.0.0.1:54322/postgres" -v ON_ERROR_STOP=1 -f "$f" ;;
+              mod_*|permisos_*) psql "postgresql://postgres:postgres@127.0.0.1:54322/postgres" -v ON_ERROR_STOP=1 -f "$f" ;;
             esac
           done
 
       - name: Verify module migrations
         run: supabase db query --local --file supabase/ci/modulos/verify-modulos.sql
+
+      - name: Verify permisos migrations
+        run: supabase db query --local --file supabase/ci/verify-permisos.sql

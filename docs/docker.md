@@ -69,6 +69,8 @@ docker compose exec -T supabase-db sh -c \
 
 Module migrations (`mod_<name>_NNN.sql`, see `docs/modulos.md`) live in the same folder and sort after every wacrm migration, so the same loop applies them last.
 
+Core permission migrations (`permisos_NNN_*.sql`, PRD wacrm-permisos-granulares) sort after modules and run last in the same loop.
+
 The integration test (`scripts/compose/compose-up.it.test.ts`) applies them the same way before exercising the cron routes.
 
 `make migrar` runs the same loop. `make reiniciar` starts a local install from
