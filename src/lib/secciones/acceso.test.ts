@@ -41,6 +41,25 @@ describe('clasificarRuta', () => {
     expect(libres).toContain('/api/ai/config');
   });
 
+  it('las rutas de cuenta son libres solo para GET/HEAD', () => {
+    expect(clasificarRuta('/api/ai/config', 'POST')).toEqual({
+      tipo: 'seccion',
+      seccion: 'agents',
+      esApi: true,
+    });
+    expect(clasificarRuta('/api/ai/config', 'delete')).toEqual({
+      tipo: 'seccion',
+      seccion: 'agents',
+      esApi: true,
+    });
+    expect(clasificarRuta('/api/account/members', 'POST')).toEqual({
+      tipo: 'seccion',
+      seccion: 'settings',
+      esApi: true,
+    });
+    expect(clasificarRuta('/api/ai/config', 'HEAD')).toEqual({ tipo: 'libre' });
+  });
+
   it('sus subrutas y escrituras siguen en su sección', () => {
     expect(clasificarRuta('/api/account/members/u1')).toEqual({
       tipo: 'seccion',

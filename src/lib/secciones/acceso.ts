@@ -12,7 +12,14 @@ export interface RutaApiLibre {
   /** true: solo la ruta exacta; false: la ruta y sus subrutas por segmento. */
   exacta: boolean;
   motivo: 'cuenta-sesion' | 'sistema';
+  /**
+   * Si está, la ruta solo es libre para GET/HEAD; cualquier otro método
+   * se decide con esta sección (las escrituras no son lecturas compartidas).
+   */
+  seccionEscritura?: SeccionId;
 }
+
+const METODOS_LECTURA = ['GET', 'HEAD'];
 
 /**
  * Rutas `/api` sin sección que siguen abiertas (R18). Todo lo demás sin
@@ -30,8 +37,18 @@ export const RUTAS_API_LIBRES: readonly RutaApiLibre[] = [
   { ruta: '/api/v1/me', exacta: true, motivo: 'cuenta-sesion' },
   // lecturas compartidas entre secciones (RUTAS_API_DE_CUENTA de CT.1):
   // solo la raíz exacta; sus escrituras siguen con requireRole('admin')
-  { ruta: '/api/account/members', exacta: true, motivo: 'cuenta-sesion' },
-  { ruta: '/api/ai/config', exacta: true, motivo: 'cuenta-sesion' },
+  {
+    ruta: '/api/account/members',
+    exacta: true,
+    motivo: 'cuenta-sesion',
+    seccionEscritura: 'settings',
+  },
+  {
+    ruta: '/api/ai/config',
+    exacta: true,
+    motivo: 'cuenta-sesion',
+    seccionEscritura: 'agents',
+  },
   // sistema: se autentican con firma o secreto
   { ruta: '/api/whatsapp/webhook', exacta: false, motivo: 'sistema' },
   { ruta: '/api/backup/cron', exacta: false, motivo: 'sistema' },
@@ -49,18 +66,29 @@ function normalizar(pathname: string): string {
   return p;
 }
 
-function casaLibre(p: string): boolean {
-  return RUTAS_API_LIBRES.some((l) =>
+function libreQueCasa(p: string): RutaApiLibre | undefined {
+  return RUTAS_API_LIBRES.find((l) =>
     l.exacta ? p === l.ruta : p === l.ruta || p.startsWith(l.ruta + '/')
   );
 }
 
-export function clasificarRuta(pathname: string): ClaseRuta {
+export function clasificarRuta(
+  pathname: string,
+  metodo: string = 'GET'
+): ClaseRuta {
   const p = normalizar(pathname);
   if (p === '/api' || p.startsWith('/api/')) {
     const seccion = seccionDeApi(CATALOGO_V1, p);
     if (seccion) return { tipo: 'seccion', seccion, esApi: true };
-    return casaLibre(p) ? { tipo: 'libre' } : { tipo: 'sin-seccion' };
+    const libre = libreQueCasa(p);
+    if (!libre) return { tipo: 'sin-seccion' };
+    if (
+      libre.seccionEscritura &&
+      !METODOS_LECTURA.includes(metodo.toUpperCase())
+    ) {
+      return { tipo: 'seccion', seccion: libre.seccionEscritura, esApi: true };
+    }
+    return { tipo: 'libre' };
   }
   const seccion = seccionDeRuta(CATALOGO_V1, p);
   return seccion
@@ -77,9 +105,10 @@ export type Decision =
 export async function decidirAcceso(
   pathname: string,
   cuentaId: string | null,
-  fuente: FuenteSecciones = fuenteSecciones()
+  fuente: FuenteSecciones = fuenteSecciones(),
+  metodo: string = 'GET'
 ): Promise<Decision> {
-  const clase = clasificarRuta(pathname);
+  const clase = clasificarRuta(pathname, metodo);
   if (clase.tipo === 'no-aplica' || clase.tipo === 'libre') {
     return { tipo: 'pasa' };
   }

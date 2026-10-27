@@ -110,7 +110,9 @@ export async function requireApiKey(
   // cuenta de la llave (el middleware no ve llaves).
   const decision = await decidirAcceso(
     new URL(request.url).pathname,
-    row.account_id
+    row.account_id,
+    undefined,
+    request.method
   );
   if (decision.tipo !== 'pasa') {
     throw forbidden('This section is not enabled for this account');

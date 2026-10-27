@@ -155,11 +155,11 @@ export async function middleware(request: NextRequest) {
   // ruta de sección pasa: el handler responde 401 o requireApiKey decide.
   const pathname = request.nextUrl.pathname
   if (pathname === '/api' || pathname.startsWith('/api/')) {
-    const clase = clasificarRuta(pathname)
+    const clase = clasificarRuta(pathname, request.method)
     if (clase.tipo !== 'seccion' || user) {
       const cuentaId =
         clase.tipo === 'seccion' && user ? await cuentaDe(supabase as unknown as ClienteCuenta, user.id) : null
-      const decision = await decidirAcceso(pathname, cuentaId)
+      const decision = await decidirAcceso(pathname, cuentaId, undefined, request.method)
       if (decision.tipo !== 'pasa') {
         return withRefreshedCookies(
           NextResponse.json({ error: 'Forbidden' }, { status: 403 })

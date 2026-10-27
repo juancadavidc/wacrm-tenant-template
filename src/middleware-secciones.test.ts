@@ -84,6 +84,22 @@ describe('middleware · secciones contratadas en /api', () => {
     expect((await pide('/api/account/members/u1')).status).toBe(403);
   });
 
+  it('la libertad de /api/ai/config y /api/account/members es solo de lectura', async () => {
+    s.apagar('agents');
+    s.apagar('settings');
+    const m = (p: string, method: string) =>
+      middleware(new NextRequest(`https://app.test${p}`, { method }));
+    for (const method of ['POST', 'PUT', 'PATCH', 'DELETE']) {
+      expect((await m('/api/ai/config', method)).status).toBe(403);
+      expect((await m('/api/account/members', method)).status).toBe(403);
+    }
+    expect((await m('/api/ai/config', 'GET')).status).not.toBe(403);
+    expect((await m('/api/ai/config', 'HEAD')).status).not.toBe(403);
+    // con la sección prendida las escrituras pasan
+    s.prender('agents');
+    expect((await m('/api/ai/config', 'POST')).status).not.toBe(403);
+  });
+
   it('con Agentes de IA prendida, /api/ai/draft pasa', async () => {
     const res = await pide('/api/ai/draft');
     expect(res.status).not.toBe(403);
