@@ -141,8 +141,9 @@ describe("middleware — refreshed auth cookies survive redirects", () => {
       new NextRequest("https://app.test/dashboard"),
     );
 
-    // No redirect — the normal NextResponse.next() already carries cookies.
-    expect(res.headers.get("location")).toBeNull();
+    // Sin permiso legible el aterrizaje redirige a /cuenta (no a /login); en
+    // ambos casos las cookies rotadas viajan en la respuesta.
+    expect(res.headers.get("location") ?? "").not.toContain("/login");
     expect(res.cookies.get(ROTATED.name)?.value).toBe(ROTATED.value);
   });
 });

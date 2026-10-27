@@ -2947,7 +2947,13 @@
     "titulo": "Sin acceso",
     "texto": "La sección {nombre} no está activa para tu empresa.",
     "textoGenerico": "Esta sección no está activa para tu empresa.",
-    "volver": "Volver al panel"
+    "volver": "Volver al panel",
+    "textoPerfil": "Tu perfil no incluye la sección {nombre}.",
+    "textoSinPerfil": "Todavía no tienes un perfil asignado. Pide a un administrador de tu empresa que te asigne uno.",
+    "irACuenta": "Ir a mi cuenta"
+  },
+  "Cuenta": {
+    "titulo": "Mi cuenta"
   },
   "Superadmin": {
     "titulo": "Secciones contratadas",
