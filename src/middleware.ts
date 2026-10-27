@@ -1,7 +1,8 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 import { supabaseAuthCookieName, supabaseServerUrl } from '@/lib/supabase/internal-url'
-import { clasificarRuta, decidirAcceso } from '@/lib/secciones/acceso'
+import { clasificarRuta, decidirAcceso, decidirAccesoUsuario } from '@/lib/secciones/acceso'
+import { esSuperadmin } from '@/lib/permisos/marca-superadmin'
 
 // SHA-256 hex con Web Crypto (el middleware corre en Edge, sin node:crypto).
 // Debe coincidir con hashInviteToken de src/lib/auth/invitations.ts.
@@ -159,7 +160,15 @@ export async function middleware(request: NextRequest) {
     if (clase.tipo !== 'seccion' || user) {
       const cuentaId =
         clase.tipo === 'seccion' && user ? await cuentaDe(supabase as unknown as ClienteCuenta, user.id) : null
-      const decision = await decidirAcceso(pathname, cuentaId, undefined, request.method)
+      // Con sesión decide el permiso efectivo del usuario (I2); sin sesión
+      // (llave de API) sigue la regla de SRV.1: solo lo contratado.
+      const decision = user
+        ? await decidirAccesoUsuario(pathname, {
+            cuentaId,
+            usuarioId: user.id,
+            superadmin: esSuperadmin(user),
+          }, { metodo: request.method })
+        : await decidirAcceso(pathname, cuentaId, undefined, request.method)
       if (decision.tipo !== 'pasa') {
         return withRefreshedCookies(
           NextResponse.json({ error: 'Forbidden' }, { status: 403 })

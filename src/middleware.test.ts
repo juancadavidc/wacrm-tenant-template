@@ -54,6 +54,8 @@ import {
   stubFuenteSecciones,
 } from "@contracts/emp/company-sections.stub";
 import { usarFuenteSecciones } from "@/lib/secciones/fuente";
+import { usarObtenerPermisos } from "@/lib/secciones/permisos";
+import { crearObtenerPermisosEfectivos } from "@/lib/permisos/efectivos";
 
 // Imported after the mock is registered.
 const { middleware } = await import("./middleware");
@@ -64,12 +66,20 @@ beforeEach(() => {
   mockUser = null;
   mockInviteOk = true;
   refreshedCookies = [];
-  usarFuenteSecciones(stubFuenteSecciones());
+  const fuente = stubFuenteSecciones();
+  usarFuenteSecciones(fuente);
+  usarObtenerPermisos(
+    crearObtenerPermisosEfectivos({
+      fuente,
+      leer: async () => ({ rolCuenta: "owner", perfil: null }),
+    }),
+  );
 });
 
 afterEach(() => {
   vi.clearAllMocks();
   usarFuenteSecciones(null);
+  usarObtenerPermisos(null);
 });
 
 const ROTATED = {

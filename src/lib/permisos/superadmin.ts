@@ -6,13 +6,9 @@
 import { createClient } from '@/lib/supabase/server';
 import { ForbiddenError, UnauthorizedError } from '@/lib/auth/account';
 
-export const MARCA_SUPERADMIN = 'wacrm_superadmin';
+import { MARCA_SUPERADMIN, esSuperadmin } from './marca-superadmin';
 
-export function esSuperadmin(
-  usuario: { app_metadata?: Record<string, unknown> } | null | undefined
-): boolean {
-  return usuario?.app_metadata?.[MARCA_SUPERADMIN] === true;
-}
+export { MARCA_SUPERADMIN, esSuperadmin };
 
 /** Lee el usuario en GoTrue en cada llamada: quitar la marca surte efecto ya. */
 export async function requireSuperadmin(): Promise<{ userId: string }> {

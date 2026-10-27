@@ -6,6 +6,8 @@ import {
   type FuenteSeccionesStub,
 } from '@contracts/emp/company-sections.stub';
 import { usarFuenteSecciones } from '@/lib/secciones/fuente';
+import { usarObtenerPermisos } from '@/lib/secciones/permisos';
+import { crearObtenerPermisosEfectivos } from '@/lib/permisos/efectivos';
 
 let mockUser: { id: string } | null = null;
 let mockPerfil: { account_id: string } | null = null;
@@ -46,19 +48,31 @@ const ROTATED = {
   options: { path: '/', httpOnly: true },
 };
 
+const USUARIO = '22222222-2222-4222-8222-222222222222';
+
 let s: FuenteSeccionesStub;
 
 beforeEach(() => {
   process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://test.supabase.co';
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = 'anon-key';
-  mockUser = { id: 'u1' };
+  mockUser = { id: USUARIO };
   mockPerfil = { account_id: CUENTA_STUB };
   refreshedCookies = [];
   s = stubFuenteSecciones();
   usarFuenteSecciones(s);
+  // I2 de owner: estas pruebas miden lo contratado, no el perfil
+  usarObtenerPermisos(
+    crearObtenerPermisosEfectivos({
+      fuente: s,
+      leer: async () => ({ rolCuenta: 'owner', perfil: null }),
+    })
+  );
 });
 
-afterEach(() => usarFuenteSecciones(null));
+afterEach(() => {
+  usarFuenteSecciones(null);
+  usarObtenerPermisos(null);
+});
 
 const pide = (p: string) => middleware(new NextRequest(`https://app.test${p}`));
 
@@ -114,7 +128,7 @@ describe('middleware · secciones contratadas en /api', () => {
   });
 
   it('una ruta /api sin sección responde 403 (R18), con y sin usuario', async () => {
-    for (const u of [{ id: 'u1' }, null]) {
+    for (const u of [{ id: USUARIO }, null]) {
       mockUser = u;
       for (const p of ['/api/ruta-nueva-de-upstream', '/api/account/nueva-cosa'])
         expect((await pide(p)).status).toBe(403);
@@ -136,7 +150,7 @@ describe('middleware · secciones contratadas en /api', () => {
       '/api/invitations/t/signup',
     ])
       expect((await pide(p)).status).not.toBe(403);
-    mockUser = { id: 'u1' };
+    mockUser = { id: USUARIO };
     const login = await pide('/login');
     expect(login.status).toBe(307);
     expect(new URL(login.headers.get('location')!).pathname).toBe('/dashboard');
@@ -197,7 +211,7 @@ describe('middleware · páginas de una sección apagada', () => {
     for (const p of ['/login', '/join/abc']) {
       expect((await pide(p)).headers.get('x-middleware-rewrite')).toBeNull();
     }
-    mockUser = { id: 'u1' };
+    mockUser = { id: USUARIO };
     expect(
       (await pide('/sin-acceso')).headers.get('x-middleware-rewrite')
     ).toBeNull();
