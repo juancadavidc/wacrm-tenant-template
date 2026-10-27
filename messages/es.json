@@ -2936,5 +2936,11 @@
       "metaApiStatus": "Error de la API de Meta: {status}",
       "syncFailed": "Error al sincronizar las plantillas"
     }
+  },
+  "SinAccesoSeccion": {
+    "titulo": "Sin acceso",
+    "texto": "La sección {nombre} no está activa para tu empresa.",
+    "textoGenerico": "Esta sección no está activa para tu empresa.",
+    "volver": "Volver al panel"
   }
 }

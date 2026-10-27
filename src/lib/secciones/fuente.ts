@@ -1,27 +1,18 @@
-import {
-  CATALOGO_V1,
-  IDS_SECCION,
-  type FuenteSecciones,
-} from '@contracts/emp/company-sections';
-
-/**
- * Fuente provisional: toda cuenta tiene todas las secciones (R20).
- * EMP.1 reemplaza FUENTE_TODO_CONTRATADO por la fuente real (sin caché, R3).
- */
-export const FUENTE_TODO_CONTRATADO: FuenteSecciones = {
-  async catalogo() {
-    return CATALOGO_V1;
-  },
-  async contratadas(cuentaId) {
-    return { cuentaId, secciones: [...IDS_SECCION] };
-  },
-};
+import type { FuenteSecciones } from '@contracts/emp/company-sections';
+import { crearFuenteSecciones } from '@/lib/permisos/secciones';
 
 let registrada: FuenteSecciones | null = null;
+let real: FuenteSecciones | null = null;
 
-/** La fuente vigente: la registrada o, por ahora, todo contratado. */
+/**
+ * La fuente vigente: la real de EMP.1 (`src/lib/permisos/secciones.ts`), que
+ * lee la base en cada llamada y sin caché (R3). Se crea en el primer uso, no
+ * al importar.
+ */
 export function fuenteSecciones(): FuenteSecciones {
-  return registrada ?? FUENTE_TODO_CONTRATADO;
+  if (registrada) return registrada;
+  real ??= crearFuenteSecciones();
+  return real;
 }
 
 /** Solo pruebas: registra una fuente; `null` restaura la de por defecto. */

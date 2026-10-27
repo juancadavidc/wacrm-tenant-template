@@ -2936,5 +2936,11 @@
       "metaApiStatus": "Meta API error: {status}",
       "syncFailed": "Failed to sync templates"
     }
+  },
+  "SinAccesoSeccion": {
+    "titulo": "No access",
+    "texto": "The {nombre} section is not enabled for your company.",
+    "textoGenerico": "This section is not enabled for your company.",
+    "volver": "Back to dashboard"
   }
 }

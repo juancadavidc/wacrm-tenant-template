@@ -4,6 +4,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect } from "react";
 import { cn } from "@/lib/utils";
+import type { SeccionId } from "@contracts/emp/company-sections";
+import { filtrarMenu } from "@/lib/secciones/filtrar-menu";
 import { useAuth } from "@/hooks/use-auth";
 import { useTotalUnread } from "@/hooks/use-total-unread";
 import { useUnreadNotifications } from "@/hooks/use-unread-notifications";
@@ -89,7 +91,7 @@ interface NavItem {
   beta?: boolean;
 }
 
-const navItems: NavItem[] = [
+export const NAV_ITEMS: NavItem[] = [
   { href: "/dashboard", labelKey: "dashboard", icon: LayoutDashboard },
   { href: "/inbox", labelKey: "inbox", icon: MessageSquare },
   { href: "/notifications", labelKey: "notifications", icon: Bell },
@@ -101,11 +103,13 @@ const navItems: NavItem[] = [
   { href: "/agents", labelKey: "aiAgents", icon: Bot },
 ];
 
-const bottomNavItems = [
+export const BOTTOM_NAV_ITEMS = [
   { href: "/settings", labelKey: "settings", icon: Settings },
 ];
 
 interface SidebarProps {
+  /** Secciones contratadas por la empresa; el menú solo pinta estas. */
+  secciones: SeccionId[];
   /** Controlled on mobile by the Header's hamburger button. Ignored on lg+. */
   open?: boolean;
   onClose?: () => void;
@@ -116,7 +120,7 @@ import { MarcaLogo } from "@/components/marca/marca-logo";
 import { PoweredBy } from "@/components/marca/powered-by";
 import { useMarca } from "@/components/marca/marca-context";
 
-export function Sidebar({ open = false, onClose }: SidebarProps) {
+export function Sidebar({ open = false, onClose, secciones }: SidebarProps) {
   const t = useTranslations("Sidebar");
   const marca = useMarca();
   const pathname = usePathname();
@@ -210,7 +214,7 @@ export function Sidebar({ open = false, onClose }: SidebarProps) {
         {/* Main navigation */}
         <nav className="flex-1 overflow-y-auto px-3 py-4">
           <ul className="flex flex-col gap-1">
-            {navItems.map((item) => {
+            {filtrarMenu(NAV_ITEMS, secciones).map((item) => {
               const isActive =
                 pathname === item.href ||
                 (item.href !== "/dashboard" && pathname.startsWith(item.href));
@@ -273,7 +277,7 @@ export function Sidebar({ open = false, onClose }: SidebarProps) {
           <div className="my-4 border-t border-border" />
 
           <ul className="flex flex-col gap-1">
-            {bottomNavItems.map((item) => {
+            {filtrarMenu(BOTTOM_NAV_ITEMS, secciones).map((item) => {
               const isActive = pathname.startsWith(item.href);
               return (
                 <li key={item.href}>
@@ -362,6 +366,8 @@ export function Sidebar({ open = false, onClose }: SidebarProps) {
               sideOffset={6}
               className="min-w-56 bg-popover text-popover-foreground ring-border"
             >
+              {secciones.includes("settings") && (
+                <>
               <DropdownMenuItem
                 render={
                   <Link
@@ -386,6 +392,8 @@ export function Sidebar({ open = false, onClose }: SidebarProps) {
                 <Settings className="size-4" />
                 {t("menuSettings")}
               </DropdownMenuItem>
+                </>
+              )}
               <DropdownMenuSeparator className="bg-border" />
               <DropdownMenuItem
                 onClick={signOut}

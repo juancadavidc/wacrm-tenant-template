@@ -138,15 +138,16 @@ describe('decidirAcceso contra el stub de CT.1', () => {
     }
   });
 
-  it('la fuente por defecto es todo contratado; usarFuenteSecciones la cambia', async () => {
-    expect(await decidirAcceso('/api/ai/draft', CUENTA_STUB)).toEqual({
-      tipo: 'pasa',
-    });
+  it('la fuente por defecto es la real de EMP.1; usarFuenteSecciones la cambia', async () => {
     const s = f();
     s.apagar('agents');
     usarFuenteSecciones(s);
     expect((await decidirAcceso('/api/ai/draft', CUENTA_STUB)).tipo).toBe(
       'apagada'
     );
+    s.prender('agents');
+    expect(await decidirAcceso('/api/ai/draft', CUENTA_STUB)).toEqual({
+      tipo: 'pasa',
+    });
   });
 });

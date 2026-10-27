@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
+import type { SeccionId } from "@contracts/emp/company-sections";
 import { AuthProvider, useAuth } from "@/hooks/use-auth";
 import { Sidebar } from "@/components/layout/sidebar";
 import { Header } from "@/components/layout/header";
@@ -16,7 +17,13 @@ import { BrowserNotificationsListener } from "@/components/notifications/browser
 // itself can stay a server component and export metadata (noindex) —
 // client components can't export Next's metadata object.
 
-function DashboardShellInner({ children }: { children: React.ReactNode }) {
+function DashboardShellInner({
+  children,
+  secciones,
+}: {
+  children: React.ReactNode;
+  secciones: SeccionId[];
+}) {
   const { user, loading } = useAuth();
   const router = useRouter();
   const t = useTranslations("DashboardShell");
@@ -53,7 +60,7 @@ function DashboardShellInner({ children }: { children: React.ReactNode }) {
       {/* Desktop alerts for new customer messages (opt-in via Settings →
           Your profile). Headless — renders nothing. */}
       <BrowserNotificationsListener />
-      <Sidebar open={sidebarOpen} onClose={closeSidebar} />
+      <Sidebar open={sidebarOpen} onClose={closeSidebar} secciones={secciones} />
       <div className="flex flex-1 flex-col overflow-hidden">
         <Header onOpenSidebar={() => setSidebarOpen(true)} />
         {/* Thinner horizontal padding on mobile so cards have room to breathe. */}
@@ -72,16 +79,18 @@ export function DashboardShell({
   children,
   visibilidadActiva,
   asignacionActiva,
+  secciones,
 }: {
   children: React.ReactNode;
   visibilidadActiva: boolean;
   asignacionActiva: boolean;
+  secciones: SeccionId[];
 }) {
   return (
     <AuthProvider>
       <VisibilidadProvider activo={visibilidadActiva}>
         <AsignacionProvider activo={asignacionActiva}>
-          <DashboardShellInner>{children}</DashboardShellInner>
+          <DashboardShellInner secciones={secciones}>{children}</DashboardShellInner>
         </AsignacionProvider>
       </VisibilidadProvider>
     </AuthProvider>

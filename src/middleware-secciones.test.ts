@@ -167,3 +167,40 @@ describe('middleware · secciones contratadas en /api', () => {
     expect(res.cookies.get(ROTATED.name)?.value).toBe(ROTATED.value);
   });
 });
+
+describe('middleware · páginas de una sección apagada', () => {
+  it('la URL directa /agents con Agentes de IA apagada se reescribe a sin acceso', async () => {
+    s.apagar('agents');
+    for (const p of ['/agents', '/agents/nuevo']) {
+      const res = await pide(p);
+      expect(res.headers.get('x-middleware-rewrite')).toContain(
+        '/sin-acceso?seccion=agents'
+      );
+      expect(res.headers.get('location')).toBeNull();
+    }
+  });
+
+  it('prendida, /agents no se reescribe', async () => {
+    const res = await pide('/agents');
+    expect(res.headers.get('x-middleware-rewrite')).toBeNull();
+  });
+
+  it('sin account_id en el perfil, la página de sección muestra sin acceso', async () => {
+    mockPerfil = null as never;
+    const res = await pide('/agents');
+    expect(res.headers.get('x-middleware-rewrite')).toContain('/sin-acceso');
+  });
+
+  it('/login, /join/abc y /sin-acceso nunca se reescriben', async () => {
+    s.apagar('agents');
+    mockUser = null;
+    for (const p of ['/login', '/join/abc']) {
+      expect((await pide(p)).headers.get('x-middleware-rewrite')).toBeNull();
+    }
+    mockUser = { id: 'u1' };
+    expect(
+      (await pide('/sin-acceso')).headers.get('x-middleware-rewrite')
+    ).toBeNull();
+  });
+});
+

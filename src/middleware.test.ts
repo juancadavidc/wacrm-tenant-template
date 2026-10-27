@@ -27,6 +27,16 @@ vi.mock("@supabase/ssr", () => ({
     },
   ) => ({
     rpc: async () => ({ data: { ok: mockInviteOk } }),
+    from: () => ({
+      select: () => ({
+        eq: () => ({
+          maybeSingle: async () => ({
+            data: { account_id: CUENTA_STUB },
+            error: null,
+          }),
+        }),
+      }),
+    }),
     auth: {
       // Mirrors real auth-js: an expired access token is transparently
       // refreshed inside getUser(), which rotates the refresh token and
@@ -39,6 +49,12 @@ vi.mock("@supabase/ssr", () => ({
   }),
 }));
 
+import {
+  CUENTA_STUB,
+  stubFuenteSecciones,
+} from "@contracts/emp/company-sections.stub";
+import { usarFuenteSecciones } from "@/lib/secciones/fuente";
+
 // Imported after the mock is registered.
 const { middleware } = await import("./middleware");
 
@@ -48,9 +64,13 @@ beforeEach(() => {
   mockUser = null;
   mockInviteOk = true;
   refreshedCookies = [];
+  usarFuenteSecciones(stubFuenteSecciones());
 });
 
-afterEach(() => vi.clearAllMocks());
+afterEach(() => {
+  vi.clearAllMocks();
+  usarFuenteSecciones(null);
+});
 
 const ROTATED = {
   name: "sb-test-auth-token",
