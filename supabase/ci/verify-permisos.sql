@@ -1,5 +1,6 @@
 -- Asserts del esquema de permisos_001_secciones.sql (EMP.1).
 DO $$
+DECLARE t text;
 BEGIN
   IF to_regclass('public.permisos_secciones') IS NULL THEN
     RAISE EXCEPTION 'falta permisos_secciones';
@@ -20,13 +21,9 @@ BEGIN
   ) THEN
     RAISE EXCEPTION 'falta el trigger permisos_secciones_cuenta_nueva';
   END IF;
-END $$;
 
--- Grants de permisos_002_perfiles.sql (USR.1): lectura para authenticated,
--- escritura solo service_role.
-DO $$
-DECLARE t text;
-BEGIN
+  -- Grants de permisos_002_perfiles.sql (USR.1): lectura para authenticated,
+  -- escritura solo service_role.
   FOREACH t IN ARRAY array['permisos_perfiles','permisos_perfil_usuario'] LOOP
     IF NOT has_table_privilege('authenticated', 'public.' || t, 'SELECT') THEN
       RAISE EXCEPTION 'authenticated sin SELECT en %', t;

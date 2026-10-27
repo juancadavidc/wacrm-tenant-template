@@ -162,6 +162,11 @@ drop policy if exists permisos_perfil_usuario_select
 create policy permisos_perfil_usuario_select on permisos_perfil_usuario
   for select to authenticated using (is_account_member(account_id));
 
+-- La imagen local concede ALL por defecto a anon/authenticated: se quita la
+-- escritura explícitamente para que solo service_role escriba.
+revoke insert, update, delete, truncate
+  on permisos_hitos, permisos_perfiles, permisos_perfil_usuario
+  from anon, authenticated;
 grant select on permisos_perfiles, permisos_perfil_usuario to authenticated;
 grant all on permisos_hitos, permisos_perfiles, permisos_perfil_usuario
   to service_role;
