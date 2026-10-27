@@ -30,8 +30,11 @@ describe('R19: nadie da superadmin desde wacrm', () => {
     for (const v of ['superadmin', 'SUPERADMIN', 'owner', '', null, undefined]) {
       expect(rolDeInvitacion(v)).toBeNull();
     }
-    for (const v of ['usuario', 'admin', 'agent', 'viewer']) {
+    for (const v of ['usuario', 'admin']) {
       expect(isAccountRole(rolDeInvitacion(v))).toBe(true);
+    }
+    for (const v of ['agent', 'viewer']) {
+      expect(rolDeInvitacion(v)).toBeNull();
     }
   });
 

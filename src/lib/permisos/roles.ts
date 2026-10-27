@@ -11,15 +11,12 @@ export function rolDeCuenta(rol: AccountRole): Rol {
 }
 
 /**
- * Rol de base para una invitación. `usuario` se guarda como `agent`; `agent` y
- * `viewer` se siguen aceptando como puente hasta USR.2. `owner` no se invita.
+ * Rol de base para una invitación o un cambio de rol. Solo `usuario → agent` y
+ * `admin → admin` (decisión 9 de USR.2): `agent`, `viewer`, `owner` y
+ * cualquier otro valor (superadmin incluido, R19) → `null`.
  */
-export function rolDeInvitacion(
-  valor: unknown
-): Exclude<AccountRole, 'owner'> | null {
+export function rolDeInvitacion(valor: unknown): 'agent' | 'admin' | null {
   if (valor === 'usuario') return 'agent';
-  if (valor === 'admin' || valor === 'agent' || valor === 'viewer') {
-    return valor;
-  }
+  if (valor === 'admin') return 'admin';
   return null;
 }
