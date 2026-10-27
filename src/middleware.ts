@@ -22,8 +22,18 @@ async function isPendingInvitation(
 }
 
 // Cuenta del usuario con sesión; null si no tiene perfil o la consulta falla.
+type ClienteCuenta = {
+    from: (t: string) => {
+      select: (c: string) => {
+        eq: (k: string, v: string) => {
+          maybeSingle: () => PromiseLike<{ data: unknown; error: unknown }>
+        }
+      }
+    }
+}
+
 async function cuentaDe(
-  supabase: { from: (t: string) => any },
+  supabase: ClienteCuenta,
   userId: string,
 ): Promise<string | null> {
   try {
@@ -148,7 +158,7 @@ export async function middleware(request: NextRequest) {
     const clase = clasificarRuta(pathname)
     if (clase.tipo !== 'seccion' || user) {
       const cuentaId =
-        clase.tipo === 'seccion' && user ? await cuentaDe(supabase, user.id) : null
+        clase.tipo === 'seccion' && user ? await cuentaDe(supabase as unknown as ClienteCuenta, user.id) : null
       const decision = await decidirAcceso(pathname, cuentaId)
       if (decision.tipo !== 'pasa') {
         return withRefreshedCookies(

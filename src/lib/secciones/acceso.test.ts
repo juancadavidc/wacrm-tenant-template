@@ -70,7 +70,7 @@ describe('decidirAcceso contra el stub de CT.1', () => {
   });
 
   it('con Agentes de IA apagada, /api/ai/config y /api/account/members siguen pasando', async () => {
-    const s = f([]);
+    const s = stubFuenteSecciones([]);
     for (const p of ['/api/ai/config', '/api/account/members'])
       expect(await decidirAcceso(p, CUENTA_STUB, s)).toEqual({ tipo: 'pasa' });
   });
