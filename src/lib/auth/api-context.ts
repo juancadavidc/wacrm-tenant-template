@@ -35,6 +35,7 @@ import { hashApiKey, looksLikeApiKey } from '@/lib/api-keys/keys';
 import { hasScope, type ApiScope } from '@/lib/api-keys/scopes';
 import { forbidden, rateLimited, unauthorized } from '@/lib/api/v1/respond';
 import { checkRateLimit, RATE_LIMITS } from '@/lib/rate-limit';
+import { decidirAcceso } from '@/lib/secciones/acceso';
 
 export interface ApiKeyContext {
   /** Discriminant — lets shared logic tell key auth from cookie auth. */
@@ -103,6 +104,16 @@ export async function requireApiKey(
 
   if (scope && !hasScope(row.scopes, scope)) {
     throw forbidden(`This API key is missing the '${scope}' scope`);
+  }
+
+  // Sección contratada (SRV.1): misma decisión que el middleware, con la
+  // cuenta de la llave (el middleware no ve llaves).
+  const decision = await decidirAcceso(
+    new URL(request.url).pathname,
+    row.account_id
+  );
+  if (decision.tipo !== 'pasa') {
+    throw forbidden('This section is not enabled for this account');
   }
 
   touchLastUsed(row.id);

@@ -3,6 +3,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { generateApiKey } from "@/lib/api-keys/keys";
 import type { ApiKeyRow } from "@/lib/api-keys/store";
 import { ApiError } from "@/lib/api/v1/respond";
+import {
+  CUENTA_STUB,
+  stubFuenteSecciones,
+} from "@contracts/emp/company-sections.stub";
+import { usarFuenteSecciones } from "@/lib/secciones/fuente";
 import { __resetRateLimitForTests, RATE_LIMITS } from "@/lib/rate-limit";
 
 // Mock the service-role client factory — requireApiKey only stashes
@@ -50,6 +55,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  usarFuenteSecciones(null);
   __resetRateLimitForTests();
 });
 
@@ -128,5 +134,38 @@ describe("requireApiKey", () => {
       "rate_limited",
       429,
     );
+  });
+});
+
+describe("requireApiKey · secciones contratadas", () => {
+  const en = (path: string) =>
+    new Request(`https://crm.example.com${path}`, {
+      headers: { authorization: `Bearer ${KEY}` },
+    });
+
+  it("con Contactos apagada, una llave válida a /api/v1/contacts recibe 403", async () => {
+    const s = stubFuenteSecciones();
+    s.apagar("contacts");
+    usarFuenteSecciones(s);
+    findActiveKeyByHash.mockResolvedValue(row({ account_id: CUENTA_STUB }));
+    await expectApiError(
+      requireApiKey(en("/api/v1/contacts")),
+      "forbidden",
+      403,
+    );
+  });
+
+  it("con Contactos prendida pasa", async () => {
+    usarFuenteSecciones(stubFuenteSecciones());
+    findActiveKeyByHash.mockResolvedValue(row({ account_id: CUENTA_STUB }));
+    const ctx = await requireApiKey(en("/api/v1/contacts"));
+    expect(ctx.accountId).toBe(CUENTA_STUB);
+  });
+
+  it("/api/v1/me pasa aunque todo esté apagado", async () => {
+    usarFuenteSecciones(stubFuenteSecciones([]));
+    findActiveKeyByHash.mockResolvedValue(row({ account_id: CUENTA_STUB }));
+    const ctx = await requireApiKey(en("/api/v1/me"));
+    expect(ctx.accountId).toBe(CUENTA_STUB);
   });
 });
