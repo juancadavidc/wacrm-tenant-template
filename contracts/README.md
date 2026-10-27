@@ -50,8 +50,8 @@ escriba el compose completo. No elimines esos `it.todo`: son el lugar donde BASE
 `contracts/mod/module.publicador.test.ts` la cierra MOD.1 (contrato I3): cada `it.todo` se convierte
 en prueba real contra el fork.
 
-`contracts/usr/effective-permissions.publicador.test.ts` la cierra USR.1 (I2 de
-`wacrm-permisos-granulares`).
+`contracts/usr/effective-permissions.publicador.test.ts` verificación cerrada por USR.1 (I2 de
+`wacrm-permisos-granulares`; `src/lib/permisos/efectivos.ts`, migración `permisos_002_perfiles.sql`).
 
 `contracts/emp/company-sections.publicador.test.ts`: verificación cerrada por EMP.1 (I1 de
 `wacrm-permisos-granulares`; `src/lib/permisos/secciones.ts`, migración `permisos_001_secciones.sql`).

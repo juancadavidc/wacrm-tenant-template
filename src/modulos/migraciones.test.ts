@@ -116,7 +116,10 @@ describe('migraciones de módulos (IT estática)', () => {
 
   it('las de permisos van después de las de wacrm y de módulos', () => {
     const todas = ordenMigraciones([...reales, 'mod_demo_001.sql']);
-    expect(todas.at(-1)).toBe('permisos_001_secciones.sql');
+    expect(todas.slice(-2)).toEqual([
+      'permisos_001_secciones.sql',
+      'permisos_002_perfiles.sql',
+    ]);
     const primera = todas.findIndex((f) => MIGRACION_PERMISOS.test(f));
     expect(todas.slice(primera).every((f) => MIGRACION_PERMISOS.test(f))).toBe(
       true

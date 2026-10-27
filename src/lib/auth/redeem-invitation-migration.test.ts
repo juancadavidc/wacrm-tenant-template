@@ -24,6 +24,9 @@ const tablesWithoutDomainData = new Set([
   // EMP.1: secciones que el trigger de cuentas nuevas prende por defecto; es
   // configuración de la empresa, no datos de uso.
   "permisos_secciones_cuenta",
+  // USR.1: perfiles de fábrica que el trigger de cuentas nuevas siembra;
+  // configuración de la empresa, no datos de uso.
+  "permisos_perfiles",
 ]);
 
 function accountScopedTables(): Set<string> {

@@ -125,3 +125,30 @@ jobs:
         run: |
           docker compose --project-name wacrm-permisos-it ps
           docker compose --project-name wacrm-permisos-it logs --tail 200
+
+  perfiles-it:
+    name: perfiles y permiso efectivo contra Postgres
+    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run perfiles integration test
+        run: COMPOSE_IT=1 npx vitest run src/lib/permisos/efectivos.it.test.ts
+        env:
+          COMPOSE_IT: '1'
+
+      - name: Dump logs on failure
+        if: failure()
+        run: |
+          docker compose --project-name wacrm-perfiles-it ps
+          docker compose --project-name wacrm-perfiles-it logs --tail 200
