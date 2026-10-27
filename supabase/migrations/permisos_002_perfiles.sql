@@ -161,3 +161,7 @@ drop policy if exists permisos_perfil_usuario_select
   on permisos_perfil_usuario;
 create policy permisos_perfil_usuario_select on permisos_perfil_usuario
   for select to authenticated using (is_account_member(account_id));
+
+grant select on permisos_perfiles, permisos_perfil_usuario to authenticated;
+grant all on permisos_hitos, permisos_perfiles, permisos_perfil_usuario
+  to service_role;
