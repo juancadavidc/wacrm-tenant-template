@@ -13,8 +13,8 @@ import {
   SinAccesoSuperadmin,
   aplicarCambio,
   cambiarPorApi,
-  decidirPagina,
 } from './interruptores-secciones';
+import { decidirPagina } from '@/lib/permisos/marca-superadmin';
 
 function render(ui: React.ReactElement): string {
   return renderToStaticMarkup(
@@ -37,6 +37,17 @@ const vista: Vista = {
 afterEach(() => vi.unstubAllGlobals());
 
 describe('decidirPagina', () => {
+  it('vive en un módulo sin la directiva use client (la página de servidor la llama)', () => {
+    const ruta = join(process.cwd(), 'src/lib/permisos/marca-superadmin.ts');
+    expect(readFileSync(ruta, 'utf8')).not.toMatch(/^\s*['"]use client['"]/m);
+    const pagina = readFileSync(
+      join(process.cwd(), 'src/app/(dashboard)/superadmin/page.tsx'),
+      'utf8'
+    );
+    expect(pagina).not.toMatch(/decidirPagina[^;]*interruptores-secciones/);
+    expect(pagina).toContain("from '@/lib/permisos/marca-superadmin'");
+  });
+
   it('el owner no ve la vista: sin la marca → sin-acceso', () => {
     expect(decidirPagina({ app_metadata: { role: 'owner' } })).toBe(
       'sin-acceso'

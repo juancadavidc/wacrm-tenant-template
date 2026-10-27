@@ -9,8 +9,8 @@ import {
   AvisoCuentaEmpresa,
   InterruptoresSecciones,
   SinAccesoSuperadmin,
-  decidirPagina,
 } from '@/components/superadmin/interruptores-secciones';
+import { decidirPagina } from '@/lib/permisos/marca-superadmin';
 
 export default async function SuperadminPage() {
   await connection();

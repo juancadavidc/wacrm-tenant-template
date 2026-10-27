@@ -86,7 +86,7 @@ function falso(opciones: {
 describe('darSuperadmin', () => {
   it('crea el usuario con la marca en app_metadata e imprime una contraseña', async () => {
     const f = falso({});
-    const r = await darSuperadmin(f.cliente, 'Juan@x.co');
+    const r = await darSuperadmin(f.cliente, 'Juan@x.co', { cuenta: EMPRESA });
     expect(r.accion).toBe('creado');
     expect(r.contrasena).toMatch(/.{20,}/);
     expect(r.cuentaEmpresaId).toBe(EMPRESA);
@@ -102,7 +102,7 @@ describe('darSuperadmin', () => {
       ],
       perfiles: [{ user_id: 'S', account_id: PERSONAL }],
     });
-    const r = await darSuperadmin(f.cliente, 'JUAN@x.co');
+    const r = await darSuperadmin(f.cliente, 'JUAN@x.co', { cuenta: EMPRESA });
     expect(r.accion).toBe('marcado');
     expect(f.updateUserById).toHaveBeenCalledWith('S', {
       app_metadata: { provider: 'email', [MARCA]: true },
@@ -151,14 +151,24 @@ describe('darSuperadmin', () => {
       darSuperadmin(f.cliente, 'ow@x.co', { cuenta: EMPRESA })
     ).rejects.toThrow(/cuenta de la empresa/);
     expect(f.updateUserById).not.toHaveBeenCalled();
-    // sin --cuenta tampoco: no hay otra cuenta candidata
-    await expect(darSuperadmin(f.cliente, 'ow@x.co')).rejects.toThrow(
-      /0 cuentas candidatas/
-    );
-    expect(f.updateUserById).not.toHaveBeenCalled();
   });
 
-  it('con varias cuentas candidatas pide --cuenta', async () => {
+  it('sin --cuenta ni EMPRESA_ACCOUNT_ID falla, aunque haya una sola candidata', async () => {
+    const f = falso({ cuentas: [{ id: EMPRESA, owner_user_id: 'OW' }] });
+    await expect(darSuperadmin(f.cliente, 'j@x.co')).rejects.toThrow(
+      /falta la cuenta de la empresa/
+    );
+    expect(f.createUser).not.toHaveBeenCalled();
+  });
+
+  it('con una cuenta que no existe falla', async () => {
+    const f = falso({ cuentas: [{ id: PERSONAL, owner_user_id: 'X' }] });
+    await expect(
+      darSuperadmin(f.cliente, 'j@x.co', { cuenta: EMPRESA })
+    ).rejects.toThrow(/no existe/);
+  });
+
+  it('con varias cuentas y sin indicar cuál, pide --cuenta', async () => {
     const f = falso({
       cuentas: [
         { id: EMPRESA, owner_user_id: 'OW' },
@@ -184,12 +194,12 @@ describe('darSuperadmin', () => {
 
   it('nunca escribe user_metadata', async () => {
     const f = falso({});
-    await darSuperadmin(f.cliente, 'j@x.co');
+    await darSuperadmin(f.cliente, 'j@x.co', { cuenta: EMPRESA });
     expect(JSON.stringify(f.createUser.mock.calls)).not.toContain(
       'user_metadata'
     );
     const g = falso({ usuarios: [{ id: 'S', email: 'j@x.co' }] });
-    await darSuperadmin(g.cliente, 'j@x.co');
+    await darSuperadmin(g.cliente, 'j@x.co', { cuenta: EMPRESA });
     expect(JSON.stringify(g.updateUserById.mock.calls)).not.toContain(
       'user_metadata'
     );
@@ -208,6 +218,11 @@ describe('escribirVariableEnv', () => {
     writeFileSync(f, 'A=1\nEMPRESA_ACCOUNT_ID=\nB=2\n');
     escribirVariableEnv(f, 'EMPRESA_ACCOUNT_ID', EMPRESA);
     expect(readFileSync(f, 'utf8')).toBe(`A=1\nEMPRESA_ACCOUNT_ID=${EMPRESA}\nB=2\n`);
+    writeFileSync(f, 'EMPRESA_ACCOUNT_ID=viejo\nA=1\nEMPRESA_ACCOUNT_ID=otro\n');
+    escribirVariableEnv(f, 'EMPRESA_ACCOUNT_ID', EMPRESA);
+    expect(readFileSync(f, 'utf8')).toBe(
+      `EMPRESA_ACCOUNT_ID=viejo\nA=1\nEMPRESA_ACCOUNT_ID=${EMPRESA}\n`
+    );
     writeFileSync(f, 'A=1\n');
     escribirVariableEnv(f, 'EMPRESA_ACCOUNT_ID', EMPRESA);
     expect(readFileSync(f, 'utf8')).toBe(`A=1\nEMPRESA_ACCOUNT_ID=${EMPRESA}\n`);

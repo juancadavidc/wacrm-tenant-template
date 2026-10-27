@@ -42,43 +42,36 @@ export async function buscarUsuario(cliente, correo) {
 }
 
 /**
- * Cuenta de la empresa: --cuenta, o la que ya dice el entorno, o la única
- * cuenta que no es del usuario. Si no se puede decidir, falla (no se adivina).
+ * Cuenta de la empresa: --cuenta o EMPRESA_ACCOUNT_ID, y tiene que existir.
+ * Nunca se deduce: si falta, falla.
  */
-export async function resolverCuentaEmpresa(
-  cliente,
-  { cuenta, env = {}, usuarioId = null }
-) {
+export async function resolverCuentaEmpresa(cliente, { cuenta, env = {} }) {
   const dicha = (cuenta ?? env[VARIABLE_CUENTA] ?? '').trim();
-  if (dicha) {
-    if (!UUID.test(dicha)) {
-      throw new Error(`${VARIABLE_CUENTA} no es un uuid: ${dicha}`);
-    }
-    const c = ok(
-      await cliente.from('accounts').select('id').eq('id', dicha).maybeSingle(),
-      'leer la cuenta'
-    );
-    if (!c) throw new Error(`la cuenta ${dicha} no existe en esta base`);
-    return dicha;
-  }
-  const todas = ok(
-    await cliente.from('accounts').select('id, owner_user_id'),
-    'listar cuentas'
-  );
-  const candidatas = todas.filter((c) => c.owner_user_id !== usuarioId);
-  if (candidatas.length !== 1) {
+  if (!dicha) {
     throw new Error(
-      `hay ${candidatas.length} cuentas candidatas a ser la de la empresa; indica cuál con --cuenta <uuid>`
+      `falta la cuenta de la empresa: pasa --cuenta <uuid> o define ${VARIABLE_CUENTA} en el .env`
     );
   }
-  return candidatas[0].id;
+  if (!UUID.test(dicha)) {
+    throw new Error(`${VARIABLE_CUENTA} no es un uuid: ${dicha}`);
+  }
+  const c = ok(
+    await cliente.from('accounts').select('id').eq('id', dicha).maybeSingle(),
+    'leer la cuenta'
+  );
+  if (!c) throw new Error(`la cuenta ${dicha} no existe en esta base`);
+  return dicha;
 }
 
 /** Escribe (o reemplaza) KEY=valor en el .env, sin tocar el resto. */
 export function escribirVariableEnv(ruta, clave, valor) {
   const lineas = existsSync(ruta) ? readFileSync(ruta, 'utf8').split('\n') : [];
   const nueva = `${clave}=${valor}`;
-  const i = lineas.findIndex((l) => l.trim().startsWith(`${clave}=`));
+  // la app lee la última línea de la variable: se reemplaza esa
+  let i = -1;
+  lineas.forEach((l, k) => {
+    if (l.trim().startsWith(`${clave}=`)) i = k;
+  });
   if (i >= 0) lineas[i] = nueva;
   else {
     if (lineas.length && lineas[lineas.length - 1] === '') lineas.pop();
@@ -112,11 +105,7 @@ export async function darSuperadmin(
     return { accion: 'quitado' };
   }
 
-  const cuentaEmpresaId = await resolverCuentaEmpresa(cliente, {
-    cuenta,
-    env,
-    usuarioId: usuario?.id ?? null,
-  });
+  const cuentaEmpresaId = await resolverCuentaEmpresa(cliente, { cuenta, env });
 
   if (!usuario) {
     const contrasena = randomBytes(18).toString('base64url');
@@ -211,7 +200,7 @@ export async function main(argv) {
     if (r.cuentaEmpresaId) {
       escribirVariableEnv(envArchivo, VARIABLE_CUENTA, r.cuentaEmpresaId);
       console.log(
-        `${VARIABLE_CUENTA}=${r.cuentaEmpresaId} escrita en ${envArchivo}; reinicia la app para que la lea`
+        `${VARIABLE_CUENTA}=${r.cuentaEmpresaId} escrita en ${envArchivo}; recrea la app con 'docker compose up -d app' para que la lea`
       );
     }
     return 0;

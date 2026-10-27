@@ -6,15 +6,7 @@ import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 import type { SeccionId } from '@contracts/emp/company-sections';
 import { Switch } from '@/components/ui/switch';
-import { esSuperadmin } from '@/lib/permisos/marca-superadmin';
 import type { Vista } from '@/lib/permisos/vista-superadmin';
-
-/** Quién ve qué en la página: sin I/O. Solo la marca de app_metadata cuenta. */
-export function decidirPagina(
-  usuario: Parameters<typeof esSuperadmin>[0]
-): 'sin-acceso' | 'vista' {
-  return esSuperadmin(usuario) ? 'vista' : 'sin-acceso';
-}
 
 export function aplicarCambio(
   v: Vista,

@@ -40,11 +40,12 @@ ejecución. Al dar el rol, el script la **escribe en el `.env`** de la
 instalación:
 
 1. la que pases con `--cuenta <uuid>`;
-2. si no, la que ya esté en `EMPRESA_ACCOUNT_ID`;
-3. si no, la única cuenta que no es del usuario. Con cero o varias candidatas
-   el script falla y pide `--cuenta`.
+2. si no, la que ya esté en `EMPRESA_ACCOUNT_ID`.
 
-Después de correrlo **reinicia la app** para que lea el `.env`. Sin la
+Si no hay ninguna, o el uuid no existe en la base, el script falla con un
+mensaje claro: nunca adivina la cuenta.
+
+Después de correrlo recrea la app con `docker compose up -d app` para que lea el `.env`. Sin la
 variable (o si el uuid no existe en la base) `/api/superadmin/*` responde 503
 y la vista muestra un aviso; no se escribe en ninguna cuenta.
 
