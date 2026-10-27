@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { ACCOUNT_ROLES, isAccountRole } from '@/lib/auth/roles';
+import { rolDeInvitacion } from '@/lib/permisos/roles';
 
 const RAIZ = process.cwd();
 
@@ -25,6 +26,15 @@ describe('R19: nadie da superadmin desde wacrm', () => {
     );
   });
 
+  it('rolDeInvitacion (validador de la ruta de invitaciones) nunca acepta superadmin', () => {
+    for (const v of ['superadmin', 'SUPERADMIN', 'owner', '', null, undefined]) {
+      expect(rolDeInvitacion(v)).toBeNull();
+    }
+    for (const v of ['usuario', 'admin', 'agent', 'viewer']) {
+      expect(isAccountRole(rolDeInvitacion(v))).toBe(true);
+    }
+  });
+
   it('ninguna migración agrega superadmin a account_role_enum', () => {
     const sql = archivos(join(RAIZ, 'supabase/migrations'), (f) =>
       f.endsWith('.sql')
@@ -40,7 +50,9 @@ describe('R19: nadie da superadmin desde wacrm', () => {
       .filter((f) => {
         const t = readFileSync(f, 'utf8');
         return (
-          /isAccountRole\(\s*(role|body)\b/.test(t) || /set_member_role/.test(t)
+          /isAccountRole\(\s*(role|body)\b/.test(t) ||
+          /rolDeInvitacion\(/.test(t) ||
+          /set_member_role/.test(t)
         );
       })
       .map(rel)
