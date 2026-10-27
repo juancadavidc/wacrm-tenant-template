@@ -26,7 +26,14 @@ export function clienteFalso(opciones: {
     from: (tabla: string) => {
       if (tabla === 'accounts') {
         return {
-          select: async () => ({ data: opciones.cuentas, error: null }),
+          select: () => ({
+            eq: (_col: string, valor: string) => ({
+              maybeSingle: async () => ({
+                data: opciones.cuentas.find((c) => c.id === valor) ?? null,
+                error: null,
+              }),
+            }),
+          }),
         };
       }
       return { upsert };

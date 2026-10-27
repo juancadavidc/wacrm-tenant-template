@@ -14,6 +14,8 @@ const SUPER = { id: 'u-super', app_metadata: { wacrm_superadmin: true } };
 const OWNER = { id: 'u-owner', app_metadata: {} };
 const ADMIN = { id: 'u-admin', app_metadata: { provider: 'email' } };
 
+process.env['EMPRESA_ACCOUNT_ID'] = ID_E;
+
 let mockUser: unknown = null;
 let falso = armar();
 
@@ -116,16 +118,15 @@ describe('/api/superadmin/secciones', () => {
     }
   );
 
-  it('dos cuentas de empresa → 409', async () => {
-    falso = armar({
-      cuentas: [
-        { id: ID_E, name: 'A', owner_user_id: 'u-owner' },
-        { id: ID_E2, name: 'B', owner_user_id: 'u-otro' },
-      ],
-    });
-    expect((await GET()).status).toBe(409);
-    expect((await patch('agents', { prendida: false })).status).toBe(409);
-    expect(falso.upsert).not.toHaveBeenCalled();
+  it('sin EMPRESA_ACCOUNT_ID → 503 y no escribe', async () => {
+    delete process.env['EMPRESA_ACCOUNT_ID'];
+    try {
+      expect((await GET()).status).toBe(503);
+      expect((await patch('agents', { prendida: false })).status).toBe(503);
+      expect(falso.upsert).not.toHaveBeenCalled();
+    } finally {
+      process.env['EMPRESA_ACCOUNT_ID'] = ID_E;
+    }
   });
 
   it('error de la base → 500 sin el mensaje interno', async () => {

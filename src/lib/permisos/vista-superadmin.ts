@@ -10,7 +10,6 @@ import {
 } from '@contracts/emp/company-sections';
 import { supabaseAdmin } from '@/lib/automations/admin-client';
 import { crearFuenteSecciones, leerContratadasSupabase } from './secciones';
-import { esSuperadmin } from './superadmin';
 
 export type FilaVista = {
   id: SeccionId;
@@ -25,40 +24,45 @@ export type Vista = {
 };
 
 export class CuentaEmpresaError extends Error {
-  constructor(readonly encontradas: number) {
-    super(
-      `la instalación tiene ${encontradas} cuentas de empresa; se espera una`
-    );
+  constructor(motivo: string) {
+    super(motivo);
     this.name = 'CuentaEmpresaError';
   }
 }
 
-/** La única cuenta de la instalación cuyo owner no es superadmin. */
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * La cuenta de la empresa es la que nombra `EMPRESA_ACCOUNT_ID` en el entorno
+ * de la instalación (la escribe el script de alta de empresa). No se deduce de
+ * las cuentas existentes: `remove_account_member` crea cuentas personales al
+ * sacar miembros. Sin el dato, o si no existe, falla cerrado.
+ */
 export async function cuentaDeEmpresa(
-  admin: SupabaseClient
+  admin: SupabaseClient,
+  env: Record<string, string | undefined> = process.env
 ): Promise<{ id: string; nombre: string }> {
+  const id = env['EMPRESA_ACCOUNT_ID']?.trim();
+  if (!id || !UUID.test(id)) {
+    throw new CuentaEmpresaError(
+      'falta EMPRESA_ACCOUNT_ID (uuid de la cuenta de la empresa) en la configuración de la instalación'
+    );
+  }
   const { data, error } = await admin
     .from('accounts')
-    .select('id, name, owner_user_id');
+    .select('id, name')
+    .eq('id', id)
+    .maybeSingle();
   if (error) {
-    throw new Error(`no se pudieron leer las cuentas: ${error.message}`);
+    throw new Error(`no se pudo leer la cuenta de la empresa: ${error.message}`);
   }
-  const empresa: { id: string; nombre: string }[] = [];
-  for (const c of (data ?? []) as {
-    id: string;
-    name: string;
-    owner_user_id: string;
-  }[]) {
-    const { data: u, error: errU } = await admin.auth.admin.getUserById(
-      c.owner_user_id
+  if (!data) {
+    throw new CuentaEmpresaError(
+      'EMPRESA_ACCOUNT_ID no corresponde a ninguna cuenta de esta base'
     );
-    if (errU) {
-      throw new Error(`no se pudo leer el owner de la cuenta: ${errU.message}`);
-    }
-    if (!esSuperadmin(u?.user)) empresa.push({ id: c.id, nombre: c.name });
   }
-  if (empresa.length !== 1) throw new CuentaEmpresaError(empresa.length);
-  return empresa[0];
+  const c = data as { id: string; name: string };
+  return { id: c.id, nombre: c.name };
 }
 
 export function esSeccionId(v: string): v is SeccionId {

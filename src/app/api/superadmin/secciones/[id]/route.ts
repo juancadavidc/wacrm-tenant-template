@@ -46,7 +46,7 @@ export async function PATCH(
     return NextResponse.json(await leerVista(admin));
   } catch (err) {
     if (err instanceof CuentaEmpresaError) {
-      return NextResponse.json({ error: err.message }, { status: 409 });
+      return NextResponse.json({ error: err.message }, { status: 503 });
     }
     return toErrorResponse(err);
   }

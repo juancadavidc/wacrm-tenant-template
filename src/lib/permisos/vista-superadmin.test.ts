@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 import { IDS_SECCION } from '@contracts/emp/company-sections';
 import {
   CuentaEmpresaError,
@@ -21,27 +21,54 @@ const todoPrendido = Object.fromEntries(
   IDS_SECCION.map((id) => [`${ID_E}|${id}`, true])
 );
 
+const ENV = { EMPRESA_ACCOUNT_ID: ID_E };
+
+beforeEach(() => {
+  process.env['EMPRESA_ACCOUNT_ID'] = ID_E;
+});
+
 describe('cuentaDeEmpresa', () => {
-  it('ignora la cuenta personal del superadmin', async () => {
+  it('resuelve la cuenta nombrada en EMPRESA_ACCOUNT_ID', async () => {
     const { cliente } = clienteFalso({ cuentas: [E, P], usuarios });
-    await expect(cuentaDeEmpresa(cliente)).resolves.toEqual({
+    await expect(cuentaDeEmpresa(cliente, ENV)).resolves.toEqual({
       id: ID_E,
       nombre: 'Empresa',
     });
   });
 
-  it('cero o dos cuentas de empresa lanzan CuentaEmpresaError', async () => {
-    const cero = clienteFalso({ cuentas: [P], usuarios }).cliente;
-    await expect(cuentaDeEmpresa(cero)).rejects.toMatchObject({
-      encontradas: 0,
+  it('con owner + miembro sacado (cuenta personal nueva) sigue resolviendo la empresa', async () => {
+    const sacado = {
+      id: ID_X,
+      name: 'Personal del miembro sacado',
+      owner_user_id: 'u-sacado',
+    };
+    const { cliente } = clienteFalso({
+      cuentas: [E, P, sacado],
+      usuarios: { ...usuarios, 'u-sacado': {} },
     });
-    const dos = clienteFalso({
-      cuentas: [E, { ...E, id: ID_E2, owner_user_id: 'u-otro' }],
-      usuarios,
-    }).cliente;
-    const err = await cuentaDeEmpresa(dos).catch((e) => e);
-    expect(err).toBeInstanceOf(CuentaEmpresaError);
-    expect(err.encontradas).toBe(2);
+    await expect(cuentaDeEmpresa(cliente, ENV)).resolves.toEqual({
+      id: ID_E,
+      nombre: 'Empresa',
+    });
+  });
+
+  it.each([[undefined], [''], ['no-es-uuid']])(
+    'sin EMPRESA_ACCOUNT_ID válido (%j) falla cerrado',
+    async (valor) => {
+      const { cliente } = clienteFalso({ cuentas: [E], usuarios });
+      const err = await cuentaDeEmpresa(cliente, {
+        EMPRESA_ACCOUNT_ID: valor,
+      }).catch((e) => e);
+      expect(err).toBeInstanceOf(CuentaEmpresaError);
+      expect(err.message).toContain('EMPRESA_ACCOUNT_ID');
+    }
+  );
+
+  it('un id que no existe en la base falla cerrado', async () => {
+    const { cliente } = clienteFalso({ cuentas: [P], usuarios });
+    await expect(cuentaDeEmpresa(cliente, ENV)).rejects.toBeInstanceOf(
+      CuentaEmpresaError
+    );
   });
 });
 
