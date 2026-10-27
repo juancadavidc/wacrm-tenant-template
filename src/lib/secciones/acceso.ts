@@ -5,7 +5,12 @@ import {
   type FuenteSecciones,
   type SeccionId,
 } from '@contracts/emp/company-sections';
+import {
+  puedeUsar,
+  type ObtenerPermisosEfectivos,
+} from '@contracts/usr/effective-permissions';
 import { fuenteSecciones } from './fuente';
+import { obtenerPermisos } from './permisos';
 
 export interface RutaApiLibre {
   ruta: string;
@@ -101,6 +106,7 @@ export function clasificarRuta(
 export type Decision =
   | { tipo: 'pasa' }
   | { tipo: 'apagada'; seccion: SeccionId }
+  | { tipo: 'sin-permiso'; seccion: SeccionId; permitidas: SeccionId[] }
   | { tipo: 'sin-seccion' };
 
 /** El único punto de decisión por sección contratada. Sin caché (R3). */
@@ -125,4 +131,63 @@ export async function decidirAcceso(
     console.error('[secciones] no se pudo leer las secciones contratadas', err);
     return { tipo: 'apagada', seccion: clase.seccion };
   }
+}
+
+export type Quien = {
+  cuentaId: string | null;
+  usuarioId: string;
+  superadmin: boolean;
+};
+
+/**
+ * Decisión para una sesión con usuario: permiso efectivo de I2 (perfil ∩
+ * contratado). El superadmin queda fuera de I2 y sigue `decidirAcceso`.
+ * Ante cualquier error, niega (05-reglas: por defecto, sin acceso).
+ */
+export async function decidirAccesoUsuario(
+  pathname: string,
+  quien: Quien,
+  d: {
+    obtener?: ObtenerPermisosEfectivos;
+    fuente?: FuenteSecciones;
+    metodo?: string;
+  } = {}
+): Promise<Decision> {
+  const fuente = d.fuente ?? fuenteSecciones();
+  const clase = clasificarRuta(pathname, d.metodo);
+  if (clase.tipo === 'no-aplica' || clase.tipo === 'libre') {
+    return { tipo: 'pasa' };
+  }
+  if (quien.superadmin) {
+    return clase.tipo === 'sin-seccion'
+      ? { tipo: 'pasa' }
+      : decidirAcceso(pathname, quien.cuentaId, fuente, d.metodo);
+  }
+  if (clase.tipo === 'sin-seccion') return { tipo: 'sin-seccion' };
+  const { seccion } = clase;
+  const niega = (permitidas: SeccionId[] = []): Decision => ({
+    tipo: 'sin-permiso',
+    seccion,
+    permitidas,
+  });
+  if (!quien.cuentaId) return niega();
+  const obtener = d.obtener ?? obtenerPermisos();
+  let p;
+  try {
+    p = await obtener({ cuentaId: quien.cuentaId, usuarioId: quien.usuarioId });
+  } catch (err) {
+    console.error('[permisos] no se pudo leer el permiso efectivo', err);
+    return niega();
+  }
+  if (p === null) return niega();
+  if (puedeUsar(p, seccion)) return { tipo: 'pasa' };
+  const ids = new Set<string>(CATALOGO_V1.map((s) => s.id));
+  const permitidas = p.secciones.filter((s) => ids.has(s)) as SeccionId[];
+  try {
+    const { secciones } = await fuente.contratadas(quien.cuentaId);
+    if (!secciones.includes(seccion)) return { tipo: 'apagada', seccion };
+  } catch (err) {
+    console.error('[secciones] no se pudo leer las secciones contratadas', err);
+  }
+  return niega(permitidas);
 }
