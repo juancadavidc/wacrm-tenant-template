@@ -191,21 +191,28 @@ export async function middleware(request: NextRequest) {
       )
       if (decision.tipo !== 'pasa') {
         const url = request.nextUrl.clone()
-        // Aterrizaje: quien no tiene /dashboard pero sí otra sección va a la
-        // primera que su perfil permite (orden del catálogo).
-        if (
-          pathname === '/dashboard' &&
-          decision.tipo === 'sin-permiso' &&
-          decision.permitidas.length > 0
-        ) {
-          const primera = CATALOGO_V1.find((s) =>
-            decision.permitidas.includes(s.id)
-          )
-          if (primera) {
-            url.pathname = primera.ruta
-            url.search = ''
-            return withRefreshedCookies(NextResponse.redirect(url))
+        // Aterrizaje: en /dashboard, quien no puede entrar (sin permiso o con
+        // la sección apagada) va a la primera sección que sí puede usar
+        // (orden del catálogo) o, si no tiene ninguna, a /cuenta. Ambos
+        // destinos pasan la decisión, así que no hay bucle.
+        if (pathname === '/dashboard') {
+          const quien = {
+            cuentaId,
+            usuarioId: user.id,
+            superadmin: esSuperadmin(user),
           }
+          let destino = '/cuenta'
+          for (const s of CATALOGO_V1) {
+            if (s.ruta === '/dashboard') continue
+            const d = await decidirAccesoUsuario(s.ruta, quien, { metodo: 'GET' })
+            if (d.tipo === 'pasa') {
+              destino = s.ruta
+              break
+            }
+          }
+          url.pathname = destino
+          url.search = ''
+          return withRefreshedCookies(NextResponse.redirect(url))
         }
         const motivo =
           decision.tipo === 'sin-permiso'

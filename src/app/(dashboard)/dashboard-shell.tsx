@@ -62,7 +62,7 @@ function DashboardShellInner({
       <BrowserNotificationsListener />
       <Sidebar open={sidebarOpen} onClose={closeSidebar} secciones={secciones} />
       <div className="flex flex-1 flex-col overflow-hidden">
-        <Header onOpenSidebar={() => setSidebarOpen(true)} />
+        <Header onOpenSidebar={() => setSidebarOpen(true)} secciones={secciones} />
         {/* Thinner horizontal padding on mobile so cards have room to breathe. */}
         <main className="flex-1 overflow-y-auto p-4 sm:p-6">
           {/* Above every page: writes are being rejected and here's why.

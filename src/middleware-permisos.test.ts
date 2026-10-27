@@ -171,10 +171,25 @@ describe('middleware · páginas según el perfil', () => {
     expect(res.headers.get('location')).toMatch(/\/inbox$/);
   });
 
-  it('sin perfil en /dashboard: sin acceso sin-perfil', async () => {
+  it('sin perfil en /dashboard va a /cuenta (sin bucle)', async () => {
     mockUser = { id: IDS_STUB.sinPerfil, app_metadata: {} };
     const res = await pide('/dashboard');
-    expect(reescrito(res)).toContain('motivo=sin-perfil');
+    expect(res.status).toBe(307);
+    expect(res.headers.get('location')).toMatch(/\/cuenta$/);
+    expect((await pide('/cuenta')).status).toBe(200);
+  });
+
+  it('Contestador con dashboard apagado: /dashboard va a /inbox', async () => {
+    const f = stubFuenteSecciones();
+    f.apagar('dashboard');
+    usarFuenteSecciones({
+      catalogo: f.catalogo,
+      contratadas: async (c) => ({ ...(await f.contratadas(CUENTA_STUB)), cuentaId: c }),
+    });
+    const res = await pide('/dashboard');
+    expect(res.status).toBe(307);
+    expect(res.headers.get('location')).toMatch(/\/inbox$/);
+    expect(reescrito(await pide('/inbox'))).toBeNull();
   });
 
   it('Marketing: /agents pasa; con agents apagada, motivo=apagada', async () => {
