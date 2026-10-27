@@ -1,3 +1,4 @@
+import type { AccountRole } from '@/lib/auth/roles';
 import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest';
 import { IDS_SECCION } from '@contracts/emp/company-sections';
 import {
@@ -5,7 +6,10 @@ import {
   stubFuenteSecciones,
   type FuenteSeccionesStub,
 } from '@contracts/emp/company-sections.stub';
+import { IDS_STUB, SECCIONES_STUB } from '@contracts/usr/effective-permissions.stub';
+import { crearObtenerPermisosEfectivos } from '@/lib/permisos/efectivos';
 import { usarFuenteSecciones } from './fuente';
+import { usarObtenerPermisos } from './permisos';
 import { filtrarMenu, cargarSeccionesDelMenu } from './menu';
 import { NAV_ITEMS, BOTTOM_NAV_ITEMS } from '@/components/layout/sidebar';
 
@@ -21,6 +25,7 @@ beforeEach(() => {
 });
 afterEach(() => {
   usarFuenteSecciones(null);
+  usarObtenerPermisos(null);
   getCurrentAccount.mockReset();
 });
 
@@ -37,7 +42,30 @@ describe('menú por secciones contratadas', () => {
   it.each(['owner', 'admin', 'agent', 'viewer'])(
     'con Agentes de IA apagada, %s no la ve en el menú',
     async (role) => {
-      getCurrentAccount.mockResolvedValue({ accountId: CUENTA_STUB, role });
+      getCurrentAccount.mockResolvedValue({
+        accountId: CUENTA_STUB,
+        userId: IDS_STUB.marketing,
+        role,
+        supabase: {
+          auth: { getUser: async () => ({ data: { user: { app_metadata: {} } } }) },
+        },
+      });
+      usarObtenerPermisos(
+        crearObtenerPermisosEfectivos({
+          fuente: s,
+          leer: async () => ({
+            rolCuenta: role as AccountRole,
+            perfil:
+              role === 'owner' || role === 'admin'
+                ? null
+                : {
+                    id: IDS_STUB.perfilMarketing,
+                    nombre: 'Marketing',
+                    secciones: [...SECCIONES_STUB],
+                  },
+          }),
+        })
+      );
       s.apagar('agents');
       expect(await cargarSeccionesDelMenu()).not.toContain('agents');
     }

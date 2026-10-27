@@ -1,6 +1,7 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 import { supabaseAuthCookieName, supabaseServerUrl } from '@/lib/supabase/internal-url'
+import { CATALOGO_V1 } from '@contracts/emp/company-sections'
 import { clasificarRuta, decidirAcceso, decidirAccesoUsuario } from '@/lib/secciones/acceso'
 import { esSuperadmin } from '@/lib/permisos/marca-superadmin'
 
@@ -136,7 +137,7 @@ export async function middleware(request: NextRequest) {
   // Protected pages - redirect to login if not authenticated
   // Every top-level route under src/app/(dashboard)/ belongs here —
   // middleware.test.ts reads that directory and fails on a missing one.
-  const protectedPaths = ['/dashboard', '/inbox', '/contacts', '/pipelines', '/broadcasts', '/automations', '/flows', '/agents', '/notifications', '/settings', '/sin-acceso', '/superadmin']
+  const protectedPaths = ['/dashboard', '/inbox', '/contacts', '/pipelines', '/broadcasts', '/automations', '/flows', '/agents', '/notifications', '/settings', '/sin-acceso', '/superadmin', '/cuenta']
   if (!user && protectedPaths.some(path => request.nextUrl.pathname.startsWith(path))) {
     const url = request.nextUrl.clone()
     url.pathname = '/login'
@@ -183,11 +184,37 @@ export async function middleware(request: NextRequest) {
     const clase = clasificarRuta(pathname, request.method)
     if (clase.tipo === 'seccion' && !clase.esApi) {
       const cuentaId = await cuentaDe(supabase as unknown as ClienteCuenta, user.id)
-      const decision = await decidirAcceso(pathname, cuentaId, undefined, request.method)
+      const decision = await decidirAccesoUsuario(
+        pathname,
+        { cuentaId, usuarioId: user.id, superadmin: esSuperadmin(user) },
+        { metodo: request.method }
+      )
       if (decision.tipo !== 'pasa') {
         const url = request.nextUrl.clone()
+        // Aterrizaje: quien no tiene /dashboard pero sí otra sección va a la
+        // primera que su perfil permite (orden del catálogo).
+        if (
+          pathname === '/dashboard' &&
+          decision.tipo === 'sin-permiso' &&
+          decision.permitidas.length > 0
+        ) {
+          const primera = CATALOGO_V1.find((s) =>
+            decision.permitidas.includes(s.id)
+          )
+          if (primera) {
+            url.pathname = primera.ruta
+            url.search = ''
+            return withRefreshedCookies(NextResponse.redirect(url))
+          }
+        }
+        const motivo =
+          decision.tipo === 'sin-permiso'
+            ? decision.permitidas.length > 0
+              ? 'perfil'
+              : 'sin-perfil'
+            : 'apagada'
         url.pathname = '/sin-acceso'
-        url.search = `?seccion=${clase.seccion}`
+        url.search = `?seccion=${clase.seccion}&motivo=${motivo}`
         return withRefreshedCookies(NextResponse.rewrite(url))
       }
     }

@@ -151,3 +151,60 @@ describe('middleware · /api según el perfil', () => {
     expect(res.cookies.get('sb-test-auth-token')?.value).toBe('rotated');
   });
 });
+
+describe('middleware · páginas según el perfil', () => {
+  const reescrito = (res: Response) => res.headers.get('x-middleware-rewrite');
+
+  it('Contestador: /settings se reescribe a sin acceso por perfil', async () => {
+    for (const p of ['/settings', '/settings?tab=profile']) {
+      const res = await pide(p);
+      expect(reescrito(res), p).toContain(
+        '/sin-acceso?seccion=settings&motivo=perfil'
+      );
+      expect(res.headers.get('location')).toBeNull();
+    }
+  });
+
+  it('Contestador en /dashboard va a /inbox', async () => {
+    const res = await pide('/dashboard');
+    expect(res.status).toBe(307);
+    expect(res.headers.get('location')).toMatch(/\/inbox$/);
+  });
+
+  it('sin perfil en /dashboard: sin acceso sin-perfil', async () => {
+    mockUser = { id: IDS_STUB.sinPerfil, app_metadata: {} };
+    const res = await pide('/dashboard');
+    expect(reescrito(res)).toContain('motivo=sin-perfil');
+  });
+
+  it('Marketing: /agents pasa; con agents apagada, motivo=apagada', async () => {
+    mockUser = { id: IDS_STUB.marketing, app_metadata: {} };
+    expect(reescrito(await pide('/agents'))).toBeNull();
+    usarObtenerPermisos(
+      stubObtenerPermisos([
+        stubPermisos({
+          rol: 'usuario',
+          perfil: 'marketing',
+          contratadas: ['inbox', 'contacts'],
+        }),
+      ])
+    );
+    usarFuenteSecciones(null);
+    const f = stubFuenteSecciones();
+    f.apagar('agents');
+    usarFuenteSecciones({
+      catalogo: f.catalogo,
+      contratadas: async (c) => ({ ...(await f.contratadas(CUENTA_STUB)), cuentaId: c }),
+    });
+    expect(reescrito(await pide('/agents'))).toContain('motivo=apagada');
+  });
+
+  it('/cuenta nunca se reescribe', async () => {
+    for (const id of [IDS_STUB.contestador, IDS_STUB.sinPerfil]) {
+      mockUser = { id, app_metadata: {} };
+      const res = await pide('/cuenta');
+      expect(reescrito(res)).toBeNull();
+      expect(res.status).toBe(200);
+    }
+  });
+});

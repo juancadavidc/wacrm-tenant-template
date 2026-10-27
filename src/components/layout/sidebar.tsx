@@ -366,12 +366,14 @@ export function Sidebar({ open = false, onClose, secciones }: SidebarProps) {
               sideOffset={6}
               className="min-w-56 bg-popover text-popover-foreground ring-border"
             >
-              {secciones.includes("settings") && (
-                <>
               <DropdownMenuItem
                 render={
                   <Link
-                    href="/settings?tab=profile"
+                    href={
+                      secciones.includes("settings")
+                        ? "/settings?tab=profile"
+                        : "/cuenta"
+                    }
                     onClick={onClose}
                     className="text-popover-foreground focus:bg-accent focus:text-accent-foreground"
                   />
@@ -380,6 +382,8 @@ export function Sidebar({ open = false, onClose, secciones }: SidebarProps) {
                 <User className="size-4" />
                 {t("menuProfile")}
               </DropdownMenuItem>
+              {secciones.includes("settings") && (
+                <>
               <DropdownMenuItem
                 render={
                   <Link
