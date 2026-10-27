@@ -22,6 +22,8 @@ describe('clasificarRuta', () => {
     ['/api/v1/me', { tipo: 'libre' }],
     ['/api/account/members', { tipo: 'libre' }],
     ['/api/ai/config', { tipo: 'libre' }],
+    ['/api/superadmin/secciones', { tipo: 'libre' }],
+    ['/api/superadminx', { tipo: 'sin-seccion' }],
     ['/api/whatsapp/webhook', { tipo: 'libre' }],
     ['/api/backup/cron', { tipo: 'libre' }],
     ['/api/account/nueva-cosa', { tipo: 'sin-seccion' }],
