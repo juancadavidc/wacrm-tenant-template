@@ -161,7 +161,7 @@ $$;
 
 drop trigger if exists permisos_r21_invitacion on account_invitations;
 create trigger permisos_r21_invitacion
-  before insert on account_invitations
+  before insert or update of role on account_invitations
   for each row execute function permisos_r21_invitacion();
 
 alter function permisos_guardar_perfil(uuid, text, text[]) owner to postgres;

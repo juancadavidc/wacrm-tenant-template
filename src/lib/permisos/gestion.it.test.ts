@@ -248,6 +248,20 @@ describe.skipIf(process.env['COMPOSE_IT'] !== '1')(
         ).ok
       ).toBe(false);
 
+      // El admin crea una invitación agent y luego intenta subirla a admin.
+      expect(
+        comoUsuario(
+          ADMIN,
+          `insert into account_invitations (account_id, token_hash, role, expires_at) values ('${cuenta}','h-agent-luego-admin','agent', now() + interval '1 day')`
+        ).ok
+      ).toBe(true);
+      const subida = comoUsuario(
+        ADMIN,
+        `update account_invitations set role='admin' where token_hash='h-agent-luego-admin'`
+      );
+      expect(subida.ok).toBe(false);
+      expect(subida.salida).toMatch(/Solo el owner/);
+
       // Control: el owner sí puede.
       expect(
         comoUsuario(OWNER, `select set_member_role('${ADMIN2}','agent')`).ok
