@@ -19,6 +19,11 @@ import { DealsSettings } from '@/components/settings/deals-settings';
 import { InboxSettings } from '@/components/settings/inbox-settings';
 import { MembersTab } from '@/components/settings/members-tab';
 import { ProfilesPanel } from '@/components/settings/profiles-panel';
+import { PanelMarca } from '@/components/settings/marca/panel-marca';
+import {
+  esperarPerfilParaMarca,
+  puedeEditarMarca,
+} from '@/components/settings/marca/permiso-marca';
 import { ApiKeysSettings } from '@/components/settings/api-keys-settings';
 import {
   resolveSection,
@@ -44,7 +49,7 @@ export default function SettingsPage() {
 function SettingsPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { defaultCurrency } = useAuth();
+  const { defaultCurrency, accountRole, user, profileLoading } = useAuth();
   const { mode } = useTheme();
   const t = useTranslations('Settings');
 
@@ -52,7 +57,14 @@ function SettingsPageInner() {
   // section — deep-linkable, and it keeps the existing links in the
   // app sidebar/header working. Legacy tab values (tags, custom-fields)
   // resolve onto their new home; unknown/empty → the Overview landing.
-  const section = resolveSection(searchParams.get('tab'));
+  const rawTab = searchParams.get('tab');
+  const marca = puedeEditarMarca({ accountRole, user });
+  const section = resolveSection(rawTab, { marca });
+  // Quien pide ?tab=brand no ve nada hasta que se conoce su rol.
+  const esperandoRol = esperarPerfilParaMarca({
+    tab: rawTab,
+    profileLoading,
+  });
 
   const go = (next: SettingsSection) => {
     const params = new URLSearchParams(searchParams.toString());
@@ -82,6 +94,7 @@ function SettingsPageInner() {
     fields: <FieldsAndTagsPanel />,
     inbox: <InboxSettings />,
     deals: <DealsSettings />,
+    brand: <PanelMarca />,
     members: <MembersTab />,
     profiles: <ProfilesPanel />,
     api: <ApiKeysSettings />,
@@ -99,8 +112,13 @@ function SettingsPageInner() {
       </div>
 
       <div className="mt-6 grid gap-6 lg:grid-cols-[236px_minmax(0,1fr)] lg:items-start">
-        <SettingsRail active={section} onSelect={go} hints={hints} />
-        <div className="min-w-0">{panel[section]}</div>
+        <SettingsRail
+          active={section}
+          onSelect={go}
+          hints={hints}
+          ocultas={marca ? [] : ['brand']}
+        />
+        <div className="min-w-0">{esperandoRol ? null : panel[section]}</div>
       </div>
     </div>
   );

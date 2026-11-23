@@ -17,6 +17,8 @@ import {
 import { Card, CardContent } from '@/components/ui/card';
 import { useTranslations } from 'next-intl';
 import { SettingsPanelHead } from './settings-panel-head';
+import { AvisoFotoPersonal } from './aviso-foto-personal';
+import { puedeEditarMarca } from './marca/permiso-marca';
 import { BrowserNotificationsCard } from './browser-notifications-card';
 
 const MAX_AVATAR_BYTES = 2 * 1024 * 1024;
@@ -34,7 +36,7 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export function ProfileForm() {
   const t = useTranslations('Settings.profile');
-  const { user, profile, refreshProfile } = useAuth();
+  const { user, profile, refreshProfile, accountRole } = useAuth();
   const supabase = createClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -259,6 +261,9 @@ export function ProfileForm() {
               <p className="w-full text-xs text-muted-foreground">
                 {t('photoHint')}
               </p>
+              <AvisoFotoPersonal
+                enlazar={puedeEditarMarca({ accountRole, user })}
+              />
             </div>
           </div>
 

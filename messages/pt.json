@@ -1983,6 +1983,7 @@
       "fields": "Campos e tags",
       "deals": "Negócios e moeda",
       "inbox": "Caixa de entrada",
+      "brand": "Marca",
       "members": "Membros da equipe",
       "profiles": "Perfis de acesso",
       "api": "Chaves de API"
@@ -2043,7 +2044,8 @@
       "signOutEverywhere": "Sair de todos os lugares",
       "signOutFailed": "Falha ao sair: {message}",
       "avatarAlt": "Avatar",
-      "fullNamePlaceholder": "Maria Souza"
+      "fullNamePlaceholder": "Maria Souza",
+      "companyLogoHint": "Esta é a sua foto pessoal. O logo da empresa é alterado em <link>Configurações → Marca</link>"
     },
     "appearance": {
       "title": "Aparência",
@@ -2265,6 +2267,53 @@
       "loadFailed": "Falha ao carregar os perfis",
       "saveFailed": "Falha ao salvar o perfil",
       "networkError": "Erro de rede"
+    },
+    "brand": {
+      "title": "Marca",
+      "description": "O nome, logo, ícone e cor da sua empresa em todo o app.",
+      "fields": {
+        "nombre": "Nome",
+        "logo": "Logo",
+        "icono": "Ícone",
+        "color": "Cor"
+      },
+      "hints": {
+        "logo": "PNG, SVG ou WebP, máximo 1 MB",
+        "icono": "PNG, SVG ou WebP quadrado, máximo 512 KB"
+      },
+      "source": "Fonte: {fuente}",
+      "sources": {
+        "base": "Enviado aqui",
+        "config": "config/",
+        "defecto": "Stackless"
+      },
+      "choose": "Escolher arquivo",
+      "restore": "Restaurar",
+      "restored": "Voltou para {fuente}",
+      "save": "Salvar",
+      "saving": "Salvando…",
+      "saved": "Marca salva",
+      "errors": {
+        "vacio": "Digite um nome",
+        "muyLargo": "Máximo 60 caracteres",
+        "formato": "Use o formato #rrggbb",
+        "tipo": "Somente PNG, SVG ou WebP",
+        "logoMuyPesado": "Máximo 1 MB",
+        "iconoMuyPesado": "Máximo 512 KB"
+      },
+      "notSquare": "O ícone não é quadrado: é salvo mesmo assim, mas pode aparecer cortado.",
+      "general": {
+        "red": "Não foi possível salvar. Tente de novo.",
+        "cuerpoMuyPesado": "Os arquivos juntos são pesados demais.",
+        "sinPermiso": "Você não tem permissão para editar a marca.",
+        "carga": "Não foi possível carregar a marca."
+      },
+      "preview": {
+        "title": "Pré-visualização",
+        "sidebar": "Menu lateral",
+        "tab": "Aba do navegador",
+        "login": "Login"
+      }
     }
   },
   "SignupPage": {

@@ -1,5 +1,4 @@
 import {
-  ErrorSimpleSchema,
   ErrorValidacionSchema,
   MarcaApiSchema,
   RespuestaPutSchema,
@@ -65,6 +64,15 @@ async function leerJson(r: Response): Promise<unknown> {
 export function crearControladorMarca(d: DepsControlador) {
   let e: EstadoPanel = estadoInicial();
   const oyentes = new Set<() => void>();
+  // Guardar y restaurar se ejecutan de a uno, en el orden en que se piden.
+  let cola: Promise<unknown> = Promise.resolve();
+  const enCola = <T>(fn: () => Promise<T>): Promise<T> => {
+    const p = cola.then(fn, fn);
+    cola = p.catch(() => undefined);
+    return p;
+  };
+  // Una secuencia por campo: solo la última elección de archivo cuenta.
+  const secuencia: Record<'logo' | 'icono', number> = { logo: 0, icono: 0 };
 
   function poner(parcial: Partial<EstadoPanel>) {
     e = { ...e, ...parcial };
@@ -101,8 +109,13 @@ export function crearControladorMarca(d: DepsControlador) {
   }
 
   function cambiarTexto(campo: 'nombre' | 'color', valor: string) {
+    // Si el texto vuelve al valor actual no hay cambio: mandarlo fijaría el
+    // campo como "subido aquí" aunque el valor viniera de config/.
+    const vuelve = valor === e.actual?.marca[campo];
     poner({
-      borrador: { ...e.borrador, [campo]: valor },
+      borrador: vuelve
+        ? sinCampo(e.borrador, campo)
+        : { ...e.borrador, [campo]: valor },
       errores: sinCampo(e.errores, campo),
       restaurado: null,
     });
@@ -116,8 +129,10 @@ export function crearControladorMarca(d: DepsControlador) {
       return;
     }
     const llave = campo === 'logo' ? 'logoUrl' : 'iconoUrl';
-    revocarPrevias([llave]);
+    const mia = ++secuencia[campo];
     const medida = campo === 'icono' ? await d.medir(f) : null;
+    if (mia !== secuencia[campo]) return; // eligieron otro mientras medía
+    revocarPrevias([llave]);
     poner({
       borrador: { ...e.borrador, [campo]: f },
       previas: { ...e.previas, [llave]: d.crearUrl(f) },
@@ -130,23 +145,27 @@ export function crearControladorMarca(d: DepsControlador) {
     });
   }
 
-  async function guardar() {
-    if (e.guardando) return;
-    const r = validarPut(e.borrador);
+  function guardar(): Promise<void> {
+    if (e.guardando) return Promise.resolve();
+    poner({ guardando: true, errorGeneral: null, restaurado: null });
+    return enCola(ejecutarGuardado);
+  }
+
+  async function ejecutarGuardado() {
+    const enviado = e.borrador;
+    const r = validarPut(enviado);
     if (!r.ok) {
-      if (r.error === 'validacion') poner({ errores: r.campos });
+      poner({
+        guardando: false,
+        ...(r.error === 'validacion' ? { errores: r.campos } : {}),
+      });
       return;
     }
     const cuerpo = new FormData();
-    for (const k of ['nombre', 'color'] as const) {
-      const v = e.borrador[k];
+    for (const k of ['nombre', 'color', 'logo', 'icono'] as const) {
+      const v = enviado[k];
       if (v !== undefined) cuerpo.append(k, v);
     }
-    for (const k of ['logo', 'icono'] as const) {
-      const v = e.borrador[k];
-      if (v !== undefined) cuerpo.append(k, v);
-    }
-    poner({ guardando: true, errorGeneral: null, restaurado: null });
     try {
       const res = await d.fetch(RUTA_API_MARCA, {
         method: 'PUT',
@@ -155,32 +174,51 @@ export function crearControladorMarca(d: DepsControlador) {
       const cuerpoRes = await leerJson(res);
       if (res.status === 200) {
         const { avisos, ...api } = RespuestaPutSchema.parse(cuerpoRes);
-        revocarPrevias(['logoUrl', 'iconoUrl']);
+        // Se limpia solo lo que se envió; lo editado durante el guardado
+        // sigue en el borrador.
+        const borrador: EstadoPanel['borrador'] = {};
+        const previas: EstadoPanel['previas'] = { ...e.previas };
+        const errores = { ...e.errores };
+        for (const k of ['nombre', 'color', 'logo', 'icono'] as const) {
+          const igual = e.borrador[k] === enviado[k];
+          if (igual && enviado[k] !== undefined) {
+            delete errores[k];
+            if (k === 'logo' || k === 'icono') {
+              const llave = k === 'logo' ? 'logoUrl' : 'iconoUrl';
+              revocarPrevias([llave]);
+              delete previas[llave];
+            }
+          } else if (e.borrador[k] !== undefined) {
+            Object.assign(borrador, { [k]: e.borrador[k] });
+          }
+        }
+        const iconoCambio = e.borrador.icono !== enviado.icono;
         poner({
           actual: api,
-          borrador: {},
-          previas: {},
-          errores: {},
-          iconoNoCuadrado: avisos.some((a) => a.campo === 'icono'),
+          borrador,
+          previas,
+          errores,
+          iconoNoCuadrado: iconoCambio
+            ? e.iconoNoCuadrado
+            : avisos.some((a) => a.campo === 'icono'),
           guardando: false,
         });
         d.alAplicar(api);
         return;
+      }
+      // Se decide por el estado antes que por el cuerpo: un 403 o un 413 de
+      // un proxy pueden venir sin JSON.
+      if (res.status === 403) {
+        return poner({ errorGeneral: 'sin-permiso', guardando: false });
+      }
+      if (res.status === 413) {
+        return poner({ errorGeneral: 'cuerpo-muy-pesado', guardando: false });
       }
       if (res.status === 400) {
         const v = ErrorValidacionSchema.safeParse(cuerpoRes);
         if (v.success) {
           return poner({ errores: v.data.campos, guardando: false });
         }
-        ErrorSimpleSchema.parse(cuerpoRes);
-        return poner({ errorGeneral: 'red', guardando: false });
-      }
-      const simple = ErrorSimpleSchema.parse(cuerpoRes);
-      if (res.status === 403) {
-        return poner({ errorGeneral: 'sin-permiso', guardando: false });
-      }
-      if (res.status === 413 && simple.error === 'cuerpo-muy-pesado') {
-        return poner({ errorGeneral: 'cuerpo-muy-pesado', guardando: false });
       }
       poner({ errorGeneral: 'red', guardando: false });
     } catch {
@@ -188,7 +226,12 @@ export function crearControladorMarca(d: DepsControlador) {
     }
   }
 
-  async function restaurar(campo: Campo) {
+  function restaurar(campo: Campo): Promise<void> {
+    // Espera al guardado en curso para no cruzarse con él.
+    return enCola(() => ejecutarRestaurar(campo));
+  }
+
+  async function ejecutarRestaurar(campo: Campo) {
     poner({ errorGeneral: null });
     try {
       const res = await d.fetch(`${RUTA_API_MARCA}?campo=${campo}`, {
@@ -197,6 +240,7 @@ export function crearControladorMarca(d: DepsControlador) {
       if (res.status === 403) return poner({ errorGeneral: 'sin-permiso' });
       if (res.status !== 200) return poner({ errorGeneral: 'red' });
       const api = MarcaApiSchema.parse(await leerJson(res));
+      if (campo === 'logo' || campo === 'icono') secuencia[campo]++;
       let borrador = e.borrador;
       let previas = e.previas;
       if (campo === 'logo' || campo === 'icono') {

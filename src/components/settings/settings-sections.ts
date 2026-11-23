@@ -8,6 +8,7 @@ import {
   Palette,
   PlugZap,
   Shield,
+  Stamp,
   Tags,
   User,
   UsersRound,
@@ -34,6 +35,7 @@ export const SETTINGS_SECTIONS = [
   'inbox',
   'fields',
   'deals',
+  'brand',
   'members',
   'profiles',
   'api',
@@ -62,6 +64,7 @@ export const SECTION_META: Record<SettingsSection, SectionMeta> = {
   inbox: { id: 'inbox', label: 'Inbox', icon: Inbox, group: 'workspace' },
   fields: { id: 'fields', label: 'Fields & tags', icon: Tags, group: 'workspace' },
   deals: { id: 'deals', label: 'Deals & currency', icon: Coins, group: 'workspace' },
+  brand: { id: 'brand', label: 'Brand', icon: Stamp, group: 'workspace' },
   members: { id: 'members', label: 'Team members', icon: UsersRound, group: 'workspace' },
   profiles: { id: 'profiles', label: 'Access profiles', icon: IdCard, group: 'workspace' },
   api: { id: 'api', label: 'API keys', icon: KeyRound, group: 'workspace' },
@@ -83,8 +86,13 @@ function isSection(value: string | null): value is SettingsSection {
  * merged "Fields & tags" section). Anything unknown falls back to the
  * Overview landing.
  */
-export function resolveSection(raw: string | null): SettingsSection {
+export function resolveSection(
+  raw: string | null,
+  permisos?: { marca: boolean },
+): SettingsSection {
   if (raw === 'tags' || raw === 'custom-fields') return 'fields';
+  // `brand` solo para quien puede editar la marca (R5); el resto cae a Resumen.
+  if (raw === 'brand' && !permisos?.marca) return DEFAULT_SECTION;
   if (isSection(raw)) return raw;
   return DEFAULT_SECTION;
 }
