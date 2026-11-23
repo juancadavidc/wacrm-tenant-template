@@ -1983,6 +1983,7 @@
       "fields": "Fields & tags",
       "deals": "Deals & currency",
       "inbox": "Inbox",
+      "brand": "Brand",
       "members": "Team members",
       "profiles": "Access profiles",
       "api": "API keys"
@@ -2043,7 +2044,8 @@
       "signOutEverywhere": "Sign out everywhere",
       "signOutFailed": "Sign-out failed: {message}",
       "avatarAlt": "Avatar",
-      "fullNamePlaceholder": "Ada Lovelace"
+      "fullNamePlaceholder": "Ada Lovelace",
+      "companyLogoHint": "This is your personal photo. The company logo is changed in <link>Settings → Brand</link>"
     },
     "appearance": {
       "title": "Appearance",
@@ -2265,6 +2267,53 @@
       "loadFailed": "Failed to load profiles",
       "saveFailed": "Failed to save the profile",
       "networkError": "Network error"
+    },
+    "brand": {
+      "title": "Brand",
+      "description": "Your company's name, logo, icon and color across the app.",
+      "fields": {
+        "nombre": "Name",
+        "logo": "Logo",
+        "icono": "Icon",
+        "color": "Color"
+      },
+      "hints": {
+        "logo": "PNG, SVG or WebP, up to 1 MB",
+        "icono": "Square PNG, SVG or WebP, up to 512 KB"
+      },
+      "source": "Source: {fuente}",
+      "sources": {
+        "base": "Uploaded here",
+        "config": "config/",
+        "defecto": "Stackless"
+      },
+      "choose": "Choose file",
+      "restore": "Restore",
+      "restored": "Back to {fuente}",
+      "save": "Save",
+      "saving": "Saving…",
+      "saved": "Brand saved",
+      "errors": {
+        "vacio": "Enter a name",
+        "muyLargo": "Up to 60 characters",
+        "formato": "Use the #rrggbb format",
+        "tipo": "Only PNG, SVG or WebP",
+        "logoMuyPesado": "Up to 1 MB",
+        "iconoMuyPesado": "Up to 512 KB"
+      },
+      "notSquare": "The icon isn't square: it is saved anyway, but it may look cropped.",
+      "general": {
+        "red": "Couldn't save. Try again.",
+        "cuerpoMuyPesado": "The files are too heavy together.",
+        "sinPermiso": "You don't have permission to edit the brand.",
+        "carga": "Couldn't load the brand."
+      },
+      "preview": {
+        "title": "Preview",
+        "sidebar": "Sidebar",
+        "tab": "Browser tab",
+        "login": "Sign-in"
+      }
     }
   },
   "SignupPage": {

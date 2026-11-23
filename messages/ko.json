@@ -1983,6 +1983,7 @@
       "fields": "필드 & 태그",
       "deals": "딜 & 통화",
       "inbox": "인박스",
+      "brand": "브랜드",
       "members": "팀원",
       "profiles": "접근 프로필",
       "api": "API 키"
@@ -2043,7 +2044,8 @@
       "signOutEverywhere": "모든 곳에서 로그아웃",
       "signOutFailed": "로그아웃 실패: {message}",
       "avatarAlt": "아바타",
-      "fullNamePlaceholder": "김민지"
+      "fullNamePlaceholder": "김민지",
+      "companyLogoHint": "이것은 개인 사진입니다. 회사 로고는 <link>설정 → 브랜드</link>에서 변경합니다"
     },
     "appearance": {
       "title": "화면 설정",
@@ -2265,6 +2267,53 @@
       "loadFailed": "프로필을 불러오지 못했습니다",
       "saveFailed": "프로필을 저장하지 못했습니다",
       "networkError": "네트워크 오류"
+    },
+    "brand": {
+      "title": "브랜드",
+      "description": "앱 전체에 표시되는 회사 이름, 로고, 아이콘, 색상입니다.",
+      "fields": {
+        "nombre": "이름",
+        "logo": "로고",
+        "icono": "아이콘",
+        "color": "색상"
+      },
+      "hints": {
+        "logo": "PNG, SVG 또는 WebP, 최대 1MB",
+        "icono": "정사각형 PNG, SVG 또는 WebP, 최대 512KB"
+      },
+      "source": "출처: {fuente}",
+      "sources": {
+        "base": "여기에서 업로드됨",
+        "config": "config/",
+        "defecto": "Stackless"
+      },
+      "choose": "파일 선택",
+      "restore": "복원",
+      "restored": "{fuente}(으)로 돌아감",
+      "save": "저장",
+      "saving": "저장 중…",
+      "saved": "브랜드가 저장되었습니다",
+      "errors": {
+        "vacio": "이름을 입력하세요",
+        "muyLargo": "최대 60자",
+        "formato": "#rrggbb 형식으로 입력하세요",
+        "tipo": "PNG, SVG, WebP만 가능합니다",
+        "logoMuyPesado": "최대 1MB",
+        "iconoMuyPesado": "최대 512KB"
+      },
+      "notSquare": "아이콘이 정사각형이 아닙니다. 그대로 저장되지만 잘려 보일 수 있습니다.",
+      "general": {
+        "red": "저장하지 못했습니다. 다시 시도하세요.",
+        "cuerpoMuyPesado": "파일 용량의 합이 너무 큽니다.",
+        "sinPermiso": "브랜드를 편집할 권한이 없습니다.",
+        "carga": "브랜드를 불러오지 못했습니다."
+      },
+      "preview": {
+        "title": "미리보기",
+        "sidebar": "사이드바",
+        "tab": "브라우저 탭",
+        "login": "로그인"
+      }
     }
   },
   "SignupPage": {

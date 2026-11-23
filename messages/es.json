@@ -1983,6 +1983,7 @@
       "fields": "Campos y etiquetas",
       "deals": "Negocios y moneda",
       "inbox": "Bandeja de entrada",
+      "brand": "Marca",
       "members": "Miembros del equipo",
       "profiles": "Perfiles de acceso",
       "api": "Claves de API"
@@ -2043,7 +2044,8 @@
       "signOutEverywhere": "Cerrar sesión en todas partes",
       "signOutFailed": "Error al cerrar sesión: {message}",
       "avatarAlt": "Avatar",
-      "fullNamePlaceholder": "María García"
+      "fullNamePlaceholder": "María García",
+      "companyLogoHint": "Esta es tu foto personal. El logo de la empresa se cambia en <link>Configuración → Marca</link>"
     },
     "appearance": {
       "title": "Apariencia",
@@ -2265,6 +2267,53 @@
       "loadFailed": "Error al cargar los perfiles",
       "saveFailed": "Error al guardar el perfil",
       "networkError": "Error de red"
+    },
+    "brand": {
+      "title": "Marca",
+      "description": "El nombre, logo, ícono y color de tu empresa en toda la app.",
+      "fields": {
+        "nombre": "Nombre",
+        "logo": "Logo",
+        "icono": "Ícono",
+        "color": "Color"
+      },
+      "hints": {
+        "logo": "PNG, SVG o WebP, máximo 1 MB",
+        "icono": "PNG, SVG o WebP cuadrado, máximo 512 KB"
+      },
+      "source": "Fuente: {fuente}",
+      "sources": {
+        "base": "Subido aquí",
+        "config": "config/",
+        "defecto": "Stackless"
+      },
+      "choose": "Elegir archivo",
+      "restore": "Restaurar",
+      "restored": "Volvió a {fuente}",
+      "save": "Guardar",
+      "saving": "Guardando…",
+      "saved": "Marca guardada",
+      "errors": {
+        "vacio": "Escribe un nombre",
+        "muyLargo": "Máximo 60 caracteres",
+        "formato": "Usa el formato #rrggbb",
+        "tipo": "Solo PNG, SVG o WebP",
+        "logoMuyPesado": "Máximo 1 MB",
+        "iconoMuyPesado": "Máximo 512 KB"
+      },
+      "notSquare": "El ícono no es cuadrado: se guarda igual, pero puede verse recortado.",
+      "general": {
+        "red": "No se pudo guardar. Intenta de nuevo.",
+        "cuerpoMuyPesado": "Los archivos pesan demasiado juntos.",
+        "sinPermiso": "No tienes permiso para editar la marca.",
+        "carga": "No se pudo cargar la marca."
+      },
+      "preview": {
+        "title": "Vista previa",
+        "sidebar": "Menú lateral",
+        "tab": "Pestaña del navegador",
+        "login": "Inicio de sesión"
+      }
     }
   },
   "SignupPage": {
