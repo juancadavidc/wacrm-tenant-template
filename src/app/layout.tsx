@@ -6,7 +6,7 @@ import Script from "next/script";
 import { connection } from "next/server";
 import "./globals.css";
 import { cssDeMarca } from "@/lib/marca/color";
-import { leerMarca } from "@/lib/marca/marca";
+import { leerMarca, metadataDeMarca } from "@/lib/marca/marca";
 import { MarcaProvider } from "@/components/marca/marca-context";
 import { ThemeProvider } from "@/hooks/use-theme";
 import { ThemedToaster } from "@/components/themed-toaster";
@@ -28,16 +28,10 @@ export async function generateMetadata(): Promise<Metadata> {
   // La marca vive en config/ (montada en runtime): se lee por request.
   await connection();
   const t = await getTranslations("Metadata");
-  const marca = leerMarca();
+  const marca = await leerMarca();
   return {
     ...metadata,
-    title: {
-      default: marca.nombre,
-      template: `%s — ${marca.nombre}`,
-    },
-    icons: {
-      icon: [{ url: marca.logoPropio ? "/marca/logo" : "/stackless/icon.png" }],
-    },
+    ...metadataDeMarca(marca),
     description: t("description"),
   };
 }
@@ -99,7 +93,7 @@ export default async function RootLayout({
   await connection();
   const locale = await getLocale();
   const messages = await getMessages();
-  const marca = leerMarca();
+  const marca = await leerMarca();
   const marcaCss = cssDeMarca(marca.color);
 
   return (

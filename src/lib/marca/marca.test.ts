@@ -1,8 +1,11 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { armarMarca } from '@contracts/marca/marca';
 import { afterEach, describe, expect, it } from 'vitest';
-import { COLOR_DEFECTO, leerMarca, rutaLogoPropio } from './marca';
+import type { FilaMarca } from './base';
+import { leerCandidatoConfig } from './config';
+import { crearLeerMarca, metadataDeMarca } from './marca';
 
 const dirs: string[] = [];
 function conf(archivos: Record<string, string>): string {
@@ -20,83 +23,86 @@ afterEach(() => {
 });
 
 const EMPRESA = 'empresa:\n  id: baru\n  nombre: "Grifería Barú"\n';
+const CONFIG = {
+  'empresa.yaml': EMPRESA,
+  'marca.yaml': 'marca:\n  color: "#e11d48"\n  logo: logo.png\n',
+  'marca/logo.png': 'x',
+};
+
+function fila(parcial: Partial<FilaMarca>): FilaMarca {
+  return {
+    nombre: null,
+    color: null,
+    logo_ruta: null,
+    icono_ruta: null,
+    actualizado_en: '2026-11-23T00:00:00Z',
+    actualizado_por: null,
+    ...parcial,
+  };
+}
+
+const leer = (f: FilaMarca | null, dir: string) =>
+  crearLeerMarca({ fila: async () => f, dir: () => dir })();
 
 describe('leerMarca', () => {
-  it('sin config → marca Stackless por defecto', () => {
-    const m = leerMarca(conf({}));
-    expect(m).toEqual({
-      nombre: 'Stackless',
-      color: COLOR_DEFECTO,
-      logoPropio: false,
-      logoUrl: '/stackless/logo.png',
-      marcaUrl: '/stackless/mark.png',
-    });
-  });
-
-  it('con empresa, color y logo propios', () => {
-    const m = leerMarca(
-      conf({
-        'empresa.yaml': EMPRESA,
-        'marca.yaml': 'marca:\n  color: "#e11d48"\n  logo: logo.png\n',
-        'marca/logo.png': 'x',
-      })
-    );
+  it('color en la base, nombre y logo en config/', async () => {
+    const m = await leer(fila({ color: '#112233' }), conf(CONFIG));
+    expect(m.color).toBe('#112233');
+    expect(m.fuentes.color).toBe('base');
     expect(m.nombre).toBe('Grifería Barú');
-    expect(m.color).toBe('#e11d48');
-    expect(m.logoPropio).toBe(true);
-    expect(m.logoUrl).toBe('/marca/logo');
-    expect(m.marcaUrl).toBe('/marca/logo');
+    expect(m.fuentes.nombre).toBe('config');
+    expect(m.logoUrl).toMatch(/^\/marca\/logo\?v=/);
+    expect(m.fuentes.logo).toBe('config');
   });
 
-  it('empresa sin marca.yaml → nombre propio, resto por defecto', () => {
-    const m = leerMarca(conf({ 'empresa.yaml': EMPRESA }));
+  it('sin nada → marca de Stackless', async () => {
+    expect(await leer(null, conf({}))).toEqual(armarMarca({}));
+  });
+
+  it('base que falla → marca de config/', async () => {
+    const dir = conf(CONFIG);
+    const m = await crearLeerMarca({
+      fila: () => Promise.reject(new Error('caída')),
+      dir: () => dir,
+    })();
+    expect(m).toEqual(armarMarca({ config: leerCandidatoConfig(dir) }));
+  });
+
+  it('al cambiar el archivo en la base, cambia iconoUrl', async () => {
+    const dir = conf({});
+    const a = await leer(fila({ icono_ruta: 'icono/a.png' }), dir);
+    const b = await leer(fila({ icono_ruta: 'icono/b.png' }), dir);
+    expect(a.iconoUrl).toMatch(/^\/marca\/icono\?v=/);
+    expect(b.iconoUrl).toMatch(/^\/marca\/icono\?v=/);
+    expect(a.iconoUrl).not.toBe(b.iconoUrl);
+  });
+
+  it('extensión desconocida en la base pasa a config/', async () => {
+    const m = await leer(fila({ logo_ruta: 'logo/a.gif' }), conf(CONFIG));
+    expect(m.fuentes.logo).toBe('config');
+  });
+
+  it('nombre de la base de más de 60 caracteres pasa a config/', async () => {
+    const m = await leer(fila({ nombre: 'x'.repeat(61) }), conf(CONFIG));
     expect(m.nombre).toBe('Grifería Barú');
-    expect(m.color).toBe(COLOR_DEFECTO);
-    expect(m.logoPropio).toBe(false);
+    expect(m.fuentes.nombre).toBe('config');
   });
 
-  it('YAML roto → por defecto, sin lanzar', () => {
-    const m = leerMarca(conf({ 'empresa.yaml': ': : [', 'marca.yaml': '{{{' }));
-    expect(m.nombre).toBe('Stackless');
-    expect(m.color).toBe(COLOR_DEFECTO);
-  });
-
-  it('color inválido → color por defecto', () => {
-    const m = leerMarca(conf({ 'marca.yaml': 'marca:\n  color: red\n' }));
-    expect(m.color).toBe(COLOR_DEFECTO);
+  it('logo de config/ sin ícono: el ícono es el logo', async () => {
+    const m = await leer(null, conf(CONFIG));
+    expect(m.iconoUrl).toBe(m.logoUrl);
+    expect(m.fuentes.icono).toBe('config');
   });
 });
 
-describe('rutaLogoPropio', () => {
-  it('rechaza rutas que salen de config/marca/', () => {
-    const dir = conf({
-      'marca.yaml': 'marca:\n  logo: ../secreto.png\n',
-      'secreto.png': 'x',
-    });
-    expect(rutaLogoPropio(dir)).toBeNull();
-  });
-
-  it('rechaza extensiones no permitidas', () => {
-    const dir = conf({
-      'marca.yaml': 'marca:\n  logo: logo.gif\n',
-      'marca/logo.gif': 'x',
-    });
-    expect(rutaLogoPropio(dir)).toBeNull();
-  });
-
-  it('rechaza si el archivo no existe', () => {
-    const dir = conf({ 'marca.yaml': 'marca:\n  logo: logo.png\n' });
-    expect(rutaLogoPropio(dir)).toBeNull();
-  });
-
-  it('devuelve ruta y tipo MIME', () => {
-    const dir = conf({
-      'marca.yaml': 'marca:\n  logo: logo.svg\n',
-      'marca/logo.svg': '<svg/>',
-    });
-    expect(rutaLogoPropio(dir)).toEqual({
-      ruta: path.join(dir, 'marca', 'logo.svg'),
-      tipo: 'image/svg+xml',
-    });
+describe('metadataDeMarca', () => {
+  it('ícono de la base y título con plantilla', async () => {
+    const m = await leer(
+      fila({ icono_ruta: 'icono/a.png' }),
+      conf({ 'empresa.yaml': 'empresa:\n  nombre: Barú\n' })
+    );
+    const md = metadataDeMarca(m);
+    expect(md.title).toEqual({ default: 'Barú', template: '%s — Barú' });
+    expect(JSON.stringify(md.icons)).toContain('/marca/icono?v=');
   });
 });

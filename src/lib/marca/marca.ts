@@ -1,78 +1,131 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import yaml from 'js-yaml';
+import type { Metadata } from 'next';
+import { armarMarca, type LeerMarca, type Marca } from '@contracts/marca/marca';
 import { dirConfigEmpresa } from '@/modulos/interruptores';
-import { esHexColor } from './color';
-import { LOGO_MAX_BYTES, TIPOS_LOGO } from './tipos';
+import {
+  archivoDeRuta,
+  candidatoBase,
+  descargarArchivoBase,
+  filaMarcaCacheada,
+  invalidarCacheMarca,
+  type FilaMarca,
+} from './base';
+import {
+  archivoConfig,
+  leerCandidatoConfig,
+  LOGO_MAX_BYTES,
+  TIPOS_LOGO,
+} from './config';
 
-export const COLOR_DEFECTO = '#2f7bf5';
-const NOMBRE_DEFECTO = 'Stackless';
+export { COLOR_DEFECTO } from '@contracts/marca/marca';
+export type { Marca };
+export { TIPOS_LOGO, LOGO_MAX_BYTES, leerCandidatoConfig, invalidarCacheMarca };
 
-export { TIPOS_LOGO, LOGO_MAX_BYTES };
+/** Headers literales de las rutas de archivos de marca (R10). */
+export const HEADERS_ARCHIVO_MARCA = {
+  'Cache-Control': 'public, max-age=300',
+  // Un SVG abierto directo no debe poder ejecutar scripts.
+  'Content-Security-Policy':
+    "default-src 'none'; style-src 'unsafe-inline'; sandbox",
+  'X-Content-Type-Options': 'nosniff',
+} as const;
 
-export type Marca = {
-  nombre: string;
-  color: string;
-  logoPropio: boolean;
-  /** Logo completo (con nombre), para el login. */
-  logoUrl: string;
-  /** Isotipo/logo compacto, para el sidebar. */
-  marcaUrl: string;
-};
-
-function leerYaml(ruta: string): Record<string, unknown> {
-  try {
-    const doc = yaml.load(fs.readFileSync(ruta, 'utf8'));
-    return typeof doc === 'object' && doc !== null
-      ? (doc as Record<string, unknown>)
-      : {};
-  } catch {
-    return {};
-  }
-}
-
-function objeto(v: unknown): Record<string, unknown> {
-  return typeof v === 'object' && v !== null
-    ? (v as Record<string, unknown>)
-    : {};
-}
-
-/** Ruta absoluta y tipo del logo propio, o null si no hay uno válido. */
-export function rutaLogoPropio(
-  dir: string = dirConfigEmpresa()
-): { ruta: string; tipo: string } | null {
-  const archivo = objeto(leerYaml(path.join(dir, 'marca.yaml')).marca).logo;
-  if (typeof archivo !== 'string' || archivo === '') return null;
-  const carpeta = path.join(dir, 'marca');
-  const ruta = path.resolve(carpeta, archivo);
-  if (path.dirname(ruta) !== carpeta) return null;
-  const tipo = TIPOS_LOGO[path.extname(ruta).toLowerCase()];
-  if (!tipo) return null;
-  try {
-    const st = fs.statSync(ruta);
-    if (!st.isFile() || st.size > LOGO_MAX_BYTES) return null;
-  } catch {
-    return null;
-  }
-  return { ruta, tipo };
-}
-
-/** Marca de la empresa; cualquier dato ausente o inválido cae al de Stackless. */
-export function leerMarca(dir: string = dirConfigEmpresa()): Marca {
-  const nombre = objeto(
-    leerYaml(path.join(dir, 'empresa.yaml')).empresa
-  ).nombre;
-  const color = objeto(leerYaml(path.join(dir, 'marca.yaml')).marca).color;
-  const logoPropio = rutaLogoPropio(dir) !== null;
-  return {
-    nombre:
-      typeof nombre === 'string' && nombre.trim() !== ''
-        ? nombre.trim()
-        : NOMBRE_DEFECTO,
-    color:
-      typeof color === 'string' && esHexColor(color) ? color : COLOR_DEFECTO,
-    logoPropio,
-    logoUrl: logoPropio ? '/marca/logo' : '/stackless/logo.png',
-    marcaUrl: logoPropio ? '/marca/logo' : '/stackless/mark.png',
+/** Marca efectiva: por campo base → config/ → Stackless. Si la base falla, sin base. */
+export function crearLeerMarca(deps: {
+  fila: () => Promise<FilaMarca | null>;
+  dir: () => string;
+}): LeerMarca {
+  return async () => {
+    let fila: FilaMarca | null = null;
+    try {
+      fila = await deps.fila();
+    } catch {
+      fila = null;
+    }
+    return armarMarca({
+      base: candidatoBase(fila),
+      config: leerCandidatoConfig(deps.dir()),
+    });
   };
+}
+
+export const leerMarca: LeerMarca = crearLeerMarca({
+  fila: filaMarcaCacheada,
+  dir: dirConfigEmpresa,
+});
+
+export function metadataDeMarca(
+  marca: Marca
+): Pick<Metadata, 'title' | 'icons'> {
+  return {
+    title: {
+      default: marca.nombre,
+      template: `%s — ${marca.nombre}`,
+    },
+    icons: { icon: [{ url: marca.iconoUrl }] },
+  };
+}
+
+export type ArchivoMarca = { cuerpo: Uint8Array; tipo: string };
+
+/** Archivo que sirve cada ruta: base → config/ → (solo logo) Stackless → null. */
+export function crearArchivoMarca(deps: {
+  fila: () => Promise<FilaMarca | null>;
+  descargar: (ruta: string) => Promise<Uint8Array | null>;
+  dir: () => string;
+  stackless: () => Uint8Array;
+}): (campo: 'logo' | 'icono') => Promise<ArchivoMarca | null> {
+  return async (campo) => {
+    let fila: FilaMarca | null = null;
+    try {
+      fila = await deps.fila();
+    } catch {
+      fila = null;
+    }
+    const enBase = archivoDeRuta(
+      fila ? (campo === 'logo' ? fila.logo_ruta : fila.icono_ruta) : null
+    );
+    if (enBase) {
+      const cuerpo = await deps.descargar(enBase.ruta);
+      if (cuerpo) return { cuerpo, tipo: enBase.tipo };
+    }
+    const enConfig = archivoConfig(campo, deps.dir());
+    if (enConfig) {
+      try {
+        return {
+          cuerpo: new Uint8Array(fs.readFileSync(enConfig.ruta)),
+          tipo: enConfig.tipo,
+        };
+      } catch {
+        // el archivo desapareció entre el stat y la lectura
+      }
+    }
+    if (campo === 'logo') {
+      return { cuerpo: deps.stackless(), tipo: 'image/png' };
+    }
+    return null;
+  };
+}
+
+export const archivoMarca = crearArchivoMarca({
+  fila: filaMarcaCacheada,
+  descargar: (ruta) => descargarArchivoBase(ruta),
+  dir: dirConfigEmpresa,
+  stackless: () =>
+    new Uint8Array(
+      fs.readFileSync(
+        path.join(process.cwd(), 'public', 'stackless', 'logo.png')
+      )
+    ),
+});
+
+export async function responderArchivoMarca(
+  campo: 'logo' | 'icono'
+): Promise<Response> {
+  const archivo = await archivoMarca(campo);
+  if (!archivo) return new Response(null, { status: 404 });
+  return new Response(archivo.cuerpo as BodyInit, {
+    headers: { 'Content-Type': archivo.tipo, ...HEADERS_ARCHIVO_MARCA },
+  });
 }

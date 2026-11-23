@@ -16,7 +16,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import {
   LOGO_MAX_BYTES,
   TIPOS_LOGO,
-  leerMarca,
+  leerCandidatoConfig,
 } from '../../src/lib/marca/marca';
 import { RAIZ_TEMPLATE } from './repo-hijo';
 
@@ -61,7 +61,7 @@ function correr(dir: string, extra: string[]) {
 }
 
 describe('nueva-empresa --logo / --color', () => {
-  it('copia el logo y escribe config/marca.yaml legible por leerMarca', () => {
+  it('copia el logo y escribe config/marca.yaml legible por leerCandidatoConfig', () => {
     const dir = dirMinimo();
     const r = correr(dir, [
       '--logo',
@@ -71,9 +71,9 @@ describe('nueva-empresa --logo / --color', () => {
     ]);
     expect(r.status).toBe(0);
     expect(existsSync(join(dir, 'config/marca/logo.png'))).toBe(true);
-    const m = leerMarca(join(dir, 'config'));
+    const m = leerCandidatoConfig(join(dir, 'config'));
     expect(m.color).toBe('#e11d48');
-    expect(m.logoPropio).toBe(true);
+    expect(m.logo).toBeDefined();
     expect(m.nombre).toBe('Barú');
   });
 
@@ -81,7 +81,7 @@ describe('nueva-empresa --logo / --color', () => {
     const dir = dirMinimo();
     expect(correr(dir, ['--color', '#0ea5e9']).status).toBe(0);
     expect(existsSync(join(dir, 'config/marca'))).toBe(false);
-    expect(leerMarca(join(dir, 'config')).color).toBe('#0ea5e9');
+    expect(leerCandidatoConfig(join(dir, 'config')).color).toBe('#0ea5e9');
   });
 
   it('sin flags no crea marca.yaml', () => {
