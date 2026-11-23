@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/card";
 import { CheckCircle, ArrowLeft } from "lucide-react";
 import { PoweredBy } from "@/components/marca/powered-by";
-import { MarcaLogo } from "@/components/marca/marca-logo";
+import { MarcaLogoCompleto } from "@/components/marca/marca-logo";
 
 export default function ForgotPasswordPage() {
   const t = useTranslations("ForgotPasswordPage");
@@ -89,7 +89,7 @@ export default function ForgotPasswordPage() {
     <div className="flex min-h-screen flex-col items-center justify-center gap-6 bg-background px-4">
       <Card className="w-full max-w-md border-border bg-card">
         <CardHeader className="items-center text-center">
-          <MarcaLogo className="mx-auto mb-2 h-12 w-12 justify-self-center" />
+          <MarcaLogoCompleto className="mx-auto mb-2 h-12 w-auto max-w-[12rem] justify-self-center" />
           <CardTitle className="text-xl text-foreground">{t("title")}</CardTitle>
           <CardDescription className="text-muted-foreground">
             {t("desc")}

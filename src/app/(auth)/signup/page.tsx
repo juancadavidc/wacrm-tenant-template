@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/card";
 import { UsersRound } from "lucide-react";
 import { PoweredBy } from "@/components/marca/powered-by";
-import { MarcaLogo } from "@/components/marca/marca-logo";
+import { MarcaLogoCompleto } from "@/components/marca/marca-logo";
 
 // `useSearchParams` opts the component out of static prerendering
 // unless wrapped in Suspense — same pattern as /login.
@@ -103,7 +103,7 @@ function SignupPageInner() {
               <UsersRound className="h-6 w-6 text-primary" />
             </div>
           ) : (
-            <MarcaLogo className="mx-auto mb-2 h-12 w-12 justify-self-center" />
+            <MarcaLogoCompleto className="mx-auto mb-2 h-12 w-auto max-w-[12rem] justify-self-center" />
           )}
           <CardTitle className="text-xl text-foreground">
             {inviteToken ? t("titleJoin") : t("title")}
