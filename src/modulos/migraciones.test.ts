@@ -12,6 +12,7 @@ import {
 } from '@contracts/mod/module';
 import {
   DIR_MIGRACIONES,
+  MIGRACION_MARCA,
   MIGRACION_PERMISOS,
   verificarMigraciones,
 } from './migraciones';
@@ -112,6 +113,11 @@ describe('migraciones de módulos (IT estática)', () => {
     const p = verificarMigraciones(['permisos_1_x.sql'], []);
     expect(p).toHaveLength(1);
     expect(p[0].motivo).toMatch(/ni migración de wacrm ni de módulo/);
+  });
+
+  it('acepta marca_NNN_ y rechaza un prefijo marca_ mal formado', () => {
+    expect(verificarMigraciones(['marca_001_marca.sql'], [])).toEqual([]);
+    expect(MIGRACION_MARCA.test('marca_1_x.sql')).toBe(false);
   });
 
   it('las de permisos van después de las de wacrm y de módulos', () => {
