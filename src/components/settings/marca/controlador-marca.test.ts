@@ -214,4 +214,112 @@ describe('controlador de la pantalla de marca', () => {
     expect(revocarUrl).toHaveBeenCalledWith('blob:l.png');
     expect(revocarUrl).toHaveBeenCalledWith('blob:i.png');
   });
+
+  describe('carreras y errores sin JSON', () => {
+    it('dos íconos seguidos: gana el último aunque el primero mida más lento', async () => {
+      const stub = crearStubFetchMarca({ rol: 'owner' });
+      const revocarUrl = vi.fn();
+      const c = crearControladorMarca({
+        fetch: stub.fetch,
+        crearUrl: (f) => `blob:${f.name}`,
+        revocarUrl,
+        medir: (f) =>
+          new Promise((ok) =>
+            setTimeout(
+              () => ok({ ancho: 1, alto: 1 }),
+              f.name === 'a.png' ? 30 : 1
+            )
+          ),
+        alAplicar: vi.fn(),
+      });
+      await c.cargar();
+      const a = c.elegirArchivo('icono', png('a.png'));
+      const b = c.elegirArchivo('icono', png('b.png'));
+      await Promise.all([a, b]);
+      expect(c.estado().borrador.icono?.name).toBe('b.png');
+      expect(c.estado().previas.iconoUrl).toBe('blob:b.png');
+    });
+
+    it('lo editado durante un guardado sigue en el borrador', async () => {
+      const stub = crearStubFetchMarca({ rol: 'owner' });
+      let suelta: () => void = () => {};
+      const compuerta = new Promise<void>((r) => (suelta = r));
+      const c = crearControladorMarca({
+        fetch: async (i, init) => {
+          if (init?.method === 'PUT') await compuerta;
+          return stub.fetch(i, init);
+        },
+        crearUrl: (f) => `blob:${f.name}`,
+        revocarUrl: vi.fn(),
+        medir: async () => null,
+        alAplicar: vi.fn(),
+      });
+      await c.cargar();
+      c.cambiarTexto('nombre', 'Uno');
+      const g = c.guardar();
+      await new Promise((r) => setTimeout(r, 0)); // el PUT ya salió
+      c.cambiarTexto('color', '#112233');
+      suelta();
+      await g;
+      expect(c.estado().borrador).toEqual({ color: '#112233' });
+    });
+
+    it('restaurar espera al guardado en curso', async () => {
+      const stub = crearStubFetchMarca({ rol: 'owner' });
+      const orden: string[] = [];
+      const c = crearControladorMarca({
+        fetch: async (i, init) => {
+          const m = init?.method ?? 'GET';
+          if (m !== 'GET') orden.push(`${m}:ini`);
+          if (m === 'PUT') await new Promise((r) => setTimeout(r, 20));
+          const r = await stub.fetch(i, init);
+          if (m !== 'GET') orden.push(`${m}:fin`);
+          return r;
+        },
+        crearUrl: (f) => `blob:${f.name}`,
+        revocarUrl: vi.fn(),
+        medir: async () => null,
+        alAplicar: vi.fn(),
+      });
+      await c.cargar();
+      c.cambiarTexto('nombre', 'Uno');
+      const g = c.guardar();
+      const r = c.restaurar('nombre');
+      await Promise.all([g, r]);
+      expect(orden).toEqual(['PUT:ini', 'PUT:fin', 'DELETE:ini', 'DELETE:fin']);
+    });
+
+    it('un 403 o 413 sin JSON no se muestra como error de red', async () => {
+      for (const [status, esperado] of [
+        [403, 'sin-permiso'],
+        [413, 'cuerpo-muy-pesado'],
+      ] as const) {
+        const stub = crearStubFetchMarca({ rol: 'owner' });
+        const c = crearControladorMarca({
+          fetch: async (i, init) =>
+            init?.method === 'PUT'
+              ? new Response('<html>', { status })
+              : stub.fetch(i, init),
+          crearUrl: (f) => `blob:${f.name}`,
+          revocarUrl: vi.fn(),
+          medir: async () => null,
+          alAplicar: vi.fn(),
+        });
+        await c.cargar();
+        c.cambiarTexto('nombre', 'Uno');
+        await c.guardar();
+        expect(c.estado().errorGeneral).toBe(esperado);
+        expect(c.estado().guardando).toBe(false);
+      }
+    });
+
+    it('volver al valor actual saca el campo del borrador', async () => {
+      const { c } = await como('owner');
+      const actual = c.estado().actual!.marca.nombre;
+      c.cambiarTexto('nombre', 'Otro');
+      expect(c.hayCambios()).toBe(true);
+      c.cambiarTexto('nombre', actual);
+      expect(c.hayCambios()).toBe(false);
+    });
+  });
 });
