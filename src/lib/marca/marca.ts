@@ -3,17 +3,12 @@ import path from 'node:path';
 import yaml from 'js-yaml';
 import { dirConfigEmpresa } from '@/modulos/interruptores';
 import { esHexColor } from './color';
+import { LOGO_MAX_BYTES, TIPOS_LOGO } from './tipos';
 
 export const COLOR_DEFECTO = '#2f7bf5';
 const NOMBRE_DEFECTO = 'Stackless';
 
-/** Mismos valores que scripts/empresa/nueva-empresa.mjs (una prueba los fija). */
-export const TIPOS_LOGO: Record<string, string> = {
-  '.png': 'image/png',
-  '.svg': 'image/svg+xml',
-  '.webp': 'image/webp',
-};
-export const LOGO_MAX_BYTES = 1024 * 1024;
+export { TIPOS_LOGO, LOGO_MAX_BYTES };
 
 export type Marca = {
   nombre: string;
