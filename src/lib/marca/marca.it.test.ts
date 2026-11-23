@@ -87,13 +87,20 @@ describe.skipIf(process.env['COMPOSE_IT'] !== '1')(
       anon = createClient(url, env['NEXT_PUBLIC_SUPABASE_ANON_KEY']!, {
         auth: { persistSession: false },
       });
+      // PostgREST recarga el esquema de forma asíncrona tras el notify.
+      for (let i = 0; i < 30; i++) {
+        const { error } = await servicio.from('marca_instalacion').select('id');
+        if (!error) break;
+        await new Promise((r) => setTimeout(r, 1000));
+      }
       sql(`insert into marca_instalacion (id, color) values (true, '#112233')`);
-      await servicio.storage
+      const subida = await servicio.storage
         .from(BUCKET_MARCA)
         .upload('logo/x.png', new Uint8Array([137, 80, 78, 71]), {
           contentType: 'image/png',
           upsert: true,
         });
+      expect(subida.error).toBeNull();
     }, 900_000);
 
     afterAll(() => {
@@ -123,8 +130,13 @@ describe.skipIf(process.env['COMPOSE_IT'] !== '1')(
     }, 60_000);
 
     it('un cliente sin sesión no puede leer la tabla de marca', async () => {
-      const { data } = await anon.from('marca_instalacion').select('*');
-      expect(data ?? []).toEqual([]);
+      const { data, error } = await anon.from('marca_instalacion').select('*');
+      expect(error?.code).toBe('42501');
+      expect(data).toBeNull();
+      const ok = await servicio.storage
+        .from(BUCKET_MARCA)
+        .download('logo/x.png');
+      expect(ok.error).toBeNull();
       const descarga = await anon.storage
         .from(BUCKET_MARCA)
         .download('logo/x.png');

@@ -40,7 +40,11 @@ export type CandidatoMarca = {
   icono?: { version: string };
 };
 
-/** Cliente de service role con timeout. Lanza si falta URL o llave. */
+// Un cliente por proceso (y por combinación url/llave/timeout): cada cliente
+// nuevo arranca timers de auth que nadie detiene y la memoria crecería.
+const clientesMarca = new Map<string, SupabaseClient>();
+
+/** Cliente de service role con timeout, memoizado. Lanza si falta URL o llave. */
 export function clienteMarca(
   opciones: { timeoutMs?: number } = {}
 ): SupabaseClient {
@@ -48,13 +52,18 @@ export function clienteMarca(
   const llave = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!url || !llave) throw new Error('Supabase no está configurado');
   const timeoutMs = opciones.timeoutMs ?? TIMEOUT_BASE_MS;
-  return createClient(url, llave, {
-    auth: { persistSession: false },
+  const clave = `${url}|${llave}|${timeoutMs}`;
+  const existente = clientesMarca.get(clave);
+  if (existente) return existente;
+  const cliente = createClient(url, llave, {
+    auth: { persistSession: false, autoRefreshToken: false },
     global: {
       fetch: (entrada, init) =>
         fetch(entrada, { ...init, signal: AbortSignal.timeout(timeoutMs) }),
     },
   });
+  clientesMarca.set(clave, cliente);
+  return cliente;
 }
 
 /** Lee la fila única. `null` sin fila; lanza si hay error. */
@@ -116,7 +125,7 @@ export function crearCacheFila(deps: {
       if (pendiente) return pendiente;
       if (ahora() <= vence) return Promise.resolve(valor);
       const mia = generacion;
-      pendiente = Promise.resolve()
+      const propia: Promise<FilaMarca | null> = Promise.resolve()
         .then(() => deps.leer())
         .then((fila) => {
           if (mia === generacion) {
@@ -137,9 +146,10 @@ export function crearCacheFila(deps: {
           return null;
         })
         .finally(() => {
-          pendiente = null;
+          if (pendiente === propia) pendiente = null;
         });
-      return pendiente;
+      pendiente = propia;
+      return propia;
     },
     invalidar() {
       generacion += 1;
