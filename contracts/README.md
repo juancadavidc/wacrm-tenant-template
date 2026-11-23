@@ -1,7 +1,7 @@
 # contracts/
 
 Esta carpeta contiene los contratos de interfaz de los PRD `wacrm-tenant-repo-template` y
-`wacrm-permisos-granulares` (los `I*` se repiten entre PRD).
+`wacrm-permisos-granulares` y `wacrm-marca-ui` (los `I*` se repiten entre PRD).
 
 Cada contrato es la fuente de verdad de una interfaz (`I*`) del PRD: define los tipos,
 esquemas y helpers que los módulos publicadores exponen y los consumidores importan.
@@ -14,6 +14,7 @@ esquemas y helpers que los módulos publicadores exponen y los consumidores impo
 | I3 — Contrato de módulos                                                           | `mod/module.ts`                | MOD     | ASG, VIS |
 | I2 (PRD wacrm-permisos-granulares) — Permisos efectivos de usuario                 | `usr/effective-permissions.ts` | USR     | SRV      |
 | I1 (PRD wacrm-permisos-granulares) — Catálogo de secciones y secciones contratadas | `emp/company-sections.ts`      | EMP     | USR, SRV |
+| I1 (PRD wacrm-marca-ui) — API de marca                                             | `marca/api.ts`                 | MRC     | PNL      |
 
 I1 deja fuera de toda sección (`RUTAS_API_DE_CUENTA`) las lecturas compartidas `/api/account/members` y `/api/ai/config` (rutas exactas); SRV.1 las pone en `RUTAS_API_LIBRES`.
 
@@ -39,6 +40,10 @@ npx vitest run contracts/usr
 
 # Catálogo de secciones (I1 de wacrm-permisos-granulares) y sus CDC de SRV y USR
 npx vitest run contracts/emp
+
+# API de marca (I1 de wacrm-marca-ui) y su CDC de PNL
+# (contracts/marca/ también tendrá marca.ts de I2, CT.2)
+npx vitest run contracts/marca/api
 ```
 
 ## Verificación pendiente del publicador
@@ -55,6 +60,8 @@ en prueba real contra el fork.
 
 `contracts/emp/company-sections.publicador.test.ts`: verificación cerrada por EMP.1 (I1 de
 `wacrm-permisos-granulares`; `src/lib/permisos/secciones.ts`, migración `permisos_001_secciones.sql`).
+
+`contracts/marca/api.publicador.test.ts`: verificación cerrada por MRC.2 (I1 de `wacrm-marca-ui`).
 
 ## Regla de estabilidad
 
