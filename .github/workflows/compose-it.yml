@@ -17,6 +17,7 @@ on:
       - src/lib/permisos/**
       - supabase/migrations/marca_*
       - src/lib/marca/**
+      - src/app/api/marca/**
       - .github/workflows/compose-it.yml
   push:
     branches: [main]
@@ -149,11 +150,18 @@ jobs:
         env:
           COMPOSE_IT: '1'
 
+      - name: Run marca API integration test
+        run: COMPOSE_IT=1 npx vitest run src/lib/marca/escritura.it.test.ts
+        env:
+          COMPOSE_IT: '1'
+
       - name: Dump logs on failure
         if: failure()
         run: |
           docker compose --project-name wacrm-marca-it ps
           docker compose --project-name wacrm-marca-it logs --tail 200
+          docker compose --project-name wacrm-marca-api-it ps
+          docker compose --project-name wacrm-marca-api-it logs --tail 200
 
   perfiles-it:
     name: perfiles y permiso efectivo contra Postgres
