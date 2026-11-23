@@ -15,6 +15,7 @@ esquemas y helpers que los módulos publicadores exponen y los consumidores impo
 | I2 (PRD wacrm-permisos-granulares) — Permisos efectivos de usuario                 | `usr/effective-permissions.ts` | USR     | SRV      |
 | I1 (PRD wacrm-permisos-granulares) — Catálogo de secciones y secciones contratadas | `emp/company-sections.ts`      | EMP     | USR, SRV |
 | I1 (PRD wacrm-marca-ui) — API de marca                                             | `marca/api.ts`                 | MRC     | PNL      |
+| I2 (PRD wacrm-marca-ui) — Marca efectiva y rutas de archivos                       | `marca/marca.ts`               | MRC     | PNL, HIJ |
 
 I1 deja fuera de toda sección (`RUTAS_API_DE_CUENTA`) las lecturas compartidas `/api/account/members` y `/api/ai/config` (rutas exactas); SRV.1 las pone en `RUTAS_API_LIBRES`.
 
@@ -42,8 +43,10 @@ npx vitest run contracts/usr
 npx vitest run contracts/emp
 
 # API de marca (I1 de wacrm-marca-ui) y su CDC de PNL
-# (contracts/marca/ también tendrá marca.ts de I2, CT.2)
 npx vitest run contracts/marca/api
+
+# Marca efectiva (I2 de wacrm-marca-ui) y su CDC de PNL
+npx vitest run contracts/marca
 ```
 
 ## Verificación pendiente del publicador
@@ -62,6 +65,8 @@ en prueba real contra el fork.
 `wacrm-permisos-granulares`; `src/lib/permisos/secciones.ts`, migración `permisos_001_secciones.sql`).
 
 `contracts/marca/api.publicador.test.ts`: verificación cerrada por MRC.2 (I1 de `wacrm-marca-ui`).
+
+`contracts/marca/marca.publicador.test.ts`: verificación cerrada por MRC.1 (I2 de `wacrm-marca-ui`).
 
 ## Regla de estabilidad
 
