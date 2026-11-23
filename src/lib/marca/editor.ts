@@ -20,7 +20,8 @@ export function rolMarca(q: {
   const { perfil, empresaId } = q;
   if (!perfil) return 'usuario';
   if (perfil.account_role === 'owner') {
-    return !empresaId || perfil.account_id === empresaId ? 'owner' : 'usuario';
+    // Falla cerrado: sin EMPRESA_ACCOUNT_ID válido solo edita el superadmin.
+    return empresaId && perfil.account_id === empresaId ? 'owner' : 'usuario';
   }
   if (perfil.account_role === 'admin') return 'admin';
   return 'usuario';
@@ -41,7 +42,14 @@ export const leerSesionMarca: LeerSesionMarca = async () => {
     .select('account_id, account_role')
     .eq('user_id', user.id)
     .maybeSingle();
-  const empresaId = process.env['EMPRESA_ACCOUNT_ID']?.trim() || undefined;
+  const bruto = process.env['EMPRESA_ACCOUNT_ID']?.trim();
+  const empresaId =
+    bruto &&
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+      bruto
+    )
+      ? bruto
+      : undefined;
   const perfil =
     data?.account_id && data.account_role
       ? {

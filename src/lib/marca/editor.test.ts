@@ -34,9 +34,9 @@ describe('rolMarca', () => {
     ).toBe('usuario');
   });
 
-  it('owner sin empresaId', () => {
+  it('owner sin empresaId no edita (falla cerrado)', () => {
     expect(rolMarca({ user: sinMeta, perfil: perfil('owner', 'x') })).toBe(
-      'owner'
+      'usuario'
     );
   });
 

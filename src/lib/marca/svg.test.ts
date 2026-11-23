@@ -59,4 +59,22 @@ describe('limpiarSvg', () => {
     const r = limpiarSvg('<svg viewBox="0 0 10 10"><path d="M0 0h10"/></svg>');
     expect(r).toBe('<svg viewBox="0 0 10 10"><path d="M0 0h10"/></svg>');
   });
+
+  it('rechaza o quita <script> y on* escondidos dentro de <style>', () => {
+    for (const c of [
+      '<style><script>alert(1)</script></style><rect/>',
+      '<style><svg onload="alert(1)"/></style><rect/>',
+      '<style><![CDATA[a]]></style><rect/>',
+    ]) {
+      const r = limpiarSvg(`<svg ${NS}>${c}</svg>`);
+      expect(r === null || !/script|onload|CDATA/i.test(r)).toBe(true);
+    }
+  });
+
+  it('quita referencias externas con otro prefijo de xlink y en CSS', () => {
+    const r = limpiarSvg(
+      `<svg ${NS} xmlns:x="http://www.w3.org/1999/xlink"><use x:href="https://evil.com/a.svg#i"/><rect style="fill:image-set('https://evil.com/a.png' 1x)"/><rect style="fill:url(//evil.com/a)"/><rect x:onload="a()"/></svg>`
+    )!;
+    expect(r).not.toMatch(/evil\.com|image-set|onload/);
+  });
 });

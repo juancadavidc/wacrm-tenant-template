@@ -36,7 +36,7 @@ const CANONICO = new Map(
 const TEXTO_CRUDO = new Set(['script', 'style']);
 const NOMBRE_ATRIBUTO = /^[A-Za-z_:][\w:.-]*$/;
 const NOMBRE_ELEMENTO = /^[A-Za-z][\w:.-]*$/;
-const REFERENCIAS = new Set(['href', 'xlink:href', 'src']);
+const REFERENCIAS = new Set(['href', 'src']);
 
 type Atributo = { nombre: string; valor: string };
 type Etiqueta = {
@@ -53,15 +53,18 @@ function cssPeligroso(v: string): boolean {
   if (/@import|expression\s*\(|javascript:|vbscript:|data:/i.test(v)) {
     return true;
   }
+  if (/image-set\s*\(|cross-fade\s*\(|\bsrc\s*\(|\/\//i.test(v)) return true;
   return /url\(\s*(?!['"]?\s*#)/i.test(v);
 }
 
 function atributoSeguro(a: Atributo): boolean {
   const nombre = a.nombre.toLowerCase();
-  if (nombre.startsWith('on')) return false;
+  if (nombre.slice(nombre.lastIndexOf(':') + 1).startsWith('on')) return false;
   if (nombre === 'xmlns' || nombre.startsWith('xmlns:')) return true;
   if (!NOMBRE_ATRIBUTO.test(a.nombre)) return false;
-  if (REFERENCIAS.has(nombre)) return a.valor.trim().startsWith('#');
+  if (REFERENCIAS.has(nombre.slice(nombre.lastIndexOf(':') + 1))) {
+    return a.valor.trim().startsWith('#');
+  }
   return !cssPeligroso(a.valor);
 }
 
@@ -197,7 +200,9 @@ export function limpiarSvg(texto: string): string | null {
 
     const canonico = CANONICO.get(minuscula);
     const sinElemento =
-      !canonico || (minuscula === 'style' && cssPeligroso(crudo ?? ''));
+      !canonico ||
+      (minuscula === 'style' &&
+        (/[<&]|\]\]>/.test(crudo ?? '') || cssPeligroso(crudo ?? '')));
     if (sinElemento) {
       if (!raiz && minuscula !== 'svg') return null;
       if (!et.autocierre && crudo === null) omitiendo = 1;
