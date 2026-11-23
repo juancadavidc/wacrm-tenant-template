@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { esHexColor, tokensDeColor } from './color';
+import { cssDeMarca, esHexColor, tokensDeColor } from './color';
 
 describe('esHexColor', () => {
   it('acepta #rrggbb', () => {
@@ -27,5 +27,13 @@ describe('tokensDeColor', () => {
     expect(tokensDeColor('#ffffcc').primaryForeground).not.toBe(
       'oklch(0.985 0 0)'
     );
+  });
+});
+
+describe('cssDeMarca', () => {
+  it('arma los tokens con el color de la empresa', () => {
+    const css = cssDeMarca('#2f7bf5');
+    expect(css.startsWith('html[data-theme][data-mode]{--primary:')).toBe(true);
+    expect(css).toContain(`--sidebar-ring:${tokensDeColor('#2f7bf5').primary}`);
   });
 });

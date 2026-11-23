@@ -50,3 +50,13 @@ export function tokensDeColor(hex: string): TokensDeColor {
     soft2: `oklch(${base} / 0.2)`,
   };
 }
+
+/**
+ * CSS de los tokens de marca. Más específico que los bloques de acento de
+ * globals.css (0,2,1 vs 0,1,1), así el color de la empresa gana sin depender
+ * del orden de las hojas.
+ */
+export function cssDeMarca(color: string): string {
+  const t = tokensDeColor(color);
+  return `html[data-theme][data-mode]{--primary:${t.primary};--primary-foreground:${t.primaryForeground};--primary-hover:${t.hover};--primary-soft:${t.soft};--primary-soft-2:${t.soft2};--ring:${t.primary};--chart-1:${t.primary};--sidebar-primary:${t.primary};--sidebar-primary-foreground:${t.primaryForeground};--sidebar-ring:${t.primary}}`;
+}
