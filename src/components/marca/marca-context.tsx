@@ -8,7 +8,7 @@ import {
   useState,
 } from 'react';
 import type { MarcaApi } from '@contracts/marca/api';
-import type { Marca } from '@/lib/marca/marca';
+import type { Marca } from '@contracts/marca/marca';
 import { aplicarMarcaEnDocumento, fusionarMarca } from './aplicar-marca';
 
 // La marca se lee en el servidor (config/ de la empresa) y baja por contexto

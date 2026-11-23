@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto';
 import path from 'node:path';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import type { CandidatoMarca } from '@contracts/marca/marca';
 import { supabaseServerUrl } from '@/lib/supabase/internal-url';
 import { TIPOS_LOGO } from './tipos';
 
@@ -27,17 +28,6 @@ export type FilaMarca = {
   icono_ruta: string | null;
   actualizado_en: string;
   actualizado_por: string | null;
-};
-
-/**
- * Candidato de una fuente de marca (misma forma que `CandidatoMarca` de
- * `@contracts/marca/marca`; la Parte 2 lo reemplaza por ese import).
- */
-export type CandidatoMarca = {
-  nombre?: string;
-  color?: string;
-  logo?: { version: string };
-  icono?: { version: string };
 };
 
 // Un cliente por proceso (y por combinación url/llave/timeout): cada cliente
