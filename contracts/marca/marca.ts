@@ -12,7 +12,7 @@
  * (verificación del publicador, pendiente hasta que lo implemente su slice).
  */
 import { z } from 'zod';
-import { FUENTES, FuenteSchema, type Fuente } from './api';
+import { FUENTES, FuenteSchema, NOMBRE_MAX, type Fuente } from './api';
 
 export { FUENTES, FuenteSchema };
 export type { Fuente };
@@ -64,9 +64,14 @@ function versionPropia(url: string, archivo: Archivo): string | null {
 
 export const MarcaSchema = z
   .strictObject({
-    nombre: z.string().refine((s) => s.trim() === s && s.length >= 1, {
-      message: 'nombre sin espacios en los extremos y no vacío',
-    }),
+    nombre: z
+      .string()
+      .refine(
+        (s) => s.trim() === s && s.length >= 1 && s.length <= NOMBRE_MAX,
+        {
+          message: `nombre sin espacios en los extremos, de 1 a ${NOMBRE_MAX} caracteres`,
+        }
+      ),
     color: z.string().regex(COLOR_RE),
     logoUrl: z.string(),
     iconoUrl: z.string(),
@@ -141,21 +146,26 @@ export function armarMarca(c: {
 }): Marca {
   const { base, config } = c;
   const versionOk = (x: { version: string }) =>
-    VERSION_RE.test(x.version) && x.version !== VERSION_DEFECTO;
+    typeof x?.version === 'string' &&
+    VERSION_RE.test(x.version) &&
+    x.version !== VERSION_DEFECTO;
 
   const nombre = primero(
     [
       ['base', base?.nombre],
       ['config', config?.nombre],
     ],
-    (v) => v.trim().length >= 1
+    (v) =>
+      typeof v === 'string' &&
+      v.trim().length >= 1 &&
+      v.trim().length <= NOMBRE_MAX
   );
   const color = primero(
     [
       ['base', base?.color],
       ['config', config?.color],
     ],
-    (v) => COLOR_RE.test(v)
+    (v) => typeof v === 'string' && COLOR_RE.test(v)
   );
   const logo = primero(
     [
@@ -203,12 +213,18 @@ export function tieneLogoPropio(m: Marca): boolean {
 /**
  * Forma de las rutas `/marca/logo` y `/marca/icono` (R6, R10). Devuelve los
  * motivos por los que una respuesta no cumple; vacía = cumple. Un 404 no lleva
- * cuerpo ni headers obligatorios. Cache-Control no es parte de I2.
+ * cuerpo ni headers obligatorios; cualquier otro status que no sea 200 incumple. Cache-Control no es parte de I2.
  */
 export function verificarRespuestaArchivo(res: Response): string[] {
-  if (res.status !== 200) return [];
+  if (res.status === 404) return [];
+  if (res.status !== 200) {
+    return [`status no permitido: ${res.status} (solo 200 o 404)`];
+  }
   const motivos: string[] = [];
-  const tipo = (res.headers.get('content-type') ?? '').split(';')[0].trim();
+  const tipo = (res.headers.get('content-type') ?? '')
+    .split(';')[0]
+    .trim()
+    .toLowerCase();
   if (!(TIPOS_ARCHIVO_MARCA as readonly string[]).includes(tipo)) {
     motivos.push(`Content-Type no aceptado: ${tipo || '(ausente)'}`);
   }

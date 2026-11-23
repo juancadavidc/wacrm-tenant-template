@@ -76,6 +76,29 @@ describe('armarMarca', () => {
     expect(iconoBase.fuentes.icono).toBe('base');
   });
 
+  it('R7: un nombre de más de 60 caracteres cae a la siguiente fuente', () => {
+    const largo = 'a'.repeat(61);
+    const m = armarMarca({
+      base: { nombre: largo },
+      config: { nombre: 'Barú' },
+    });
+    expect(m.nombre).toBe('Barú');
+    expect(m.fuentes.nombre).toBe('config');
+    expect(armarMarca({ base: { nombre: largo } }).nombre).toBe('Stackless');
+    expect(
+      armarMarca({ base: { nombre: 'a'.repeat(60) } }).nombre
+    ).toHaveLength(60);
+  });
+  it('MarcaSchema rechaza un nombre de 61 caracteres', () => {
+    const ok = armarMarca({});
+    expect(
+      MarcaSchema.safeParse({ ...ok, nombre: 'a'.repeat(61) }).success
+    ).toBe(false);
+    expect(
+      MarcaSchema.safeParse({ ...ok, nombre: 'a'.repeat(60) }).success
+    ).toBe(true);
+  });
+
   it('R1: un valor inválido pasa a la siguiente fuente', () => {
     expect(invalidos.color).toBe('#abcdef');
     expect(invalidos.fuentes.color).toBe('config');
@@ -233,6 +256,20 @@ describe('verificarRespuestaArchivo', () => {
         con({ ...buenos, 'Content-Type': 'image/jpeg' })
       )
     ).toHaveLength(1);
+  });
+  it('un status distinto de 200 y 404 incumple', () => {
+    for (const status of [500, 302, 403]) {
+      expect(
+        verificarRespuestaArchivo(new Response(null, { status })).length
+      ).toBeGreaterThan(0);
+    }
+  });
+  it('el Content-Type no distingue mayúsculas', () => {
+    expect(
+      verificarRespuestaArchivo(
+        con({ ...buenos, 'Content-Type': 'IMAGE/SVG+XML' })
+      )
+    ).toEqual([]);
   });
   it('un 404 no exige nada', () => {
     expect(
