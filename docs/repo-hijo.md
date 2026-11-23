@@ -98,7 +98,12 @@ discreta "Powered by Stackless" en el sidebar y en las pantallas de acceso (no s
 marca:
   color: '#e11d48' # #rrggbb; deriva el color primario (hover, fondos suaves) en claro y oscuro
   logo: logo.png # archivo dentro de config/marca/ (png, svg o webp, máx. 1 MB)
+  icono: icono.png # opcional; mismo formato, máx. 512 KB. Sin él, el sidebar y el favicon usan el logo
 ```
+
+Precedencia: lo que se guarda desde la UI (base de datos) → `config/` → Stackless. Las pantallas de
+acceso muestran siempre el logo completo; el sidebar y el favicon, el ícono si existe. El cambio
+desde la UI se ve de inmediato y no pide reiniciar.
 
 Todo es opcional y se lee en cada petición: para cambiar la marca basta editar estos archivos y
 reiniciar el contenedor, sin recompilar. Un archivo ausente o inválido cae a la marca de Stackless.
